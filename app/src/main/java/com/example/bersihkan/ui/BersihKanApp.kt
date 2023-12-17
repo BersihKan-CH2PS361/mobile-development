@@ -23,16 +23,21 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.bersihkan.R
 import com.example.bersihkan.ui.navigation.NavigationItem
 import com.example.bersihkan.ui.navigation.Screen
+import com.example.bersihkan.ui.screen.customer.detailHistory.DetailScreen
+import com.example.bersihkan.ui.screen.customer.editProfile.EditProfileScreen
 import com.example.bersihkan.ui.screen.customer.history.HistoryScreen
 import com.example.bersihkan.ui.screen.customer.home.HomeScreen
 import com.example.bersihkan.ui.screen.customer.profile.ProfileScreen
+import com.example.bersihkan.ui.screen.general.about.AboutScreen
 import com.example.bersihkan.ui.screen.general.login.LoginScreen
 import com.example.bersihkan.ui.screen.general.register.RegisterScreen
 import com.example.bersihkan.ui.screen.general.welcomeScreen.WelcomePageOne
@@ -51,7 +56,7 @@ fun BersihKanApp(
 
     Scaffold(
         bottomBar = {
-            if(currentRoute != Screen.WelcomeScreen1.route && currentRoute != Screen.WelcomeScreen2.route && currentRoute != Screen.Register.route && currentRoute != Screen.Login.route){
+            if(currentRoute == Screen.Home.route || currentRoute == Screen.History.route || currentRoute == Screen.Profile.route){
                 BottomBar(navController = navController)
             }
         },
@@ -170,10 +175,73 @@ fun BersihKanApp(
                 )
             }
             composable(Screen.Profile.route){
-                ProfileScreen()
+                ProfileScreen(
+                    navigateToEditProfile = {
+                        navController.navigate(Screen.EditProfile.route){
+                            popUpTo(navController.graph.findStartDestination().id){
+                                saveState = true
+                            }
+                            restoreState = true
+                            launchSingleTop = true
+                        }
+                    },
+                    navigateToAbout = {
+                        navController.navigate(Screen.About.route){
+                            popUpTo(navController.graph.findStartDestination().id){
+                                saveState = true
+                            }
+                            restoreState = true
+                            launchSingleTop = true
+                        }
+                    },
+                    navigateToLogout = {
+                        navController.navigate(Screen.WelcomeScreen1.route){
+                            popUpTo(navController.graph.findStartDestination().id){
+                                saveState = true
+                            }
+                            restoreState = true
+                            launchSingleTop = true
+                        }
+                    },
+                )
             }
             composable(Screen.History.route){
-                HistoryScreen()
+                HistoryScreen(
+                    navigateToDetail =  { orderId ->
+                        navController.navigate(Screen.DetailHistory.createRoute(orderId))
+                    }
+                )
+            }
+            composable(
+                route = Screen.DetailHistory.route,
+                arguments = listOf(navArgument("orderId"){ type = NavType.IntType })
+            ){
+                val id = it.arguments?.getInt("orderId") ?: -1
+                DetailScreen(
+                    orderId = id,
+                    navigateToBack = {
+                        navController.navigateUp()
+                    })
+            }
+            composable(Screen.EditProfile.route){
+                EditProfileScreen(saveOnClick = {
+                    navController.navigate(Screen.Profile.route){
+                        popUpTo(navController.graph.findStartDestination().id){
+                            saveState = true
+                        }
+                        restoreState = true
+                        launchSingleTop = true
+                    }
+                },
+                    navigateToBack = {
+                        navController.navigateUp()
+                    }
+                )
+            }
+            composable(Screen.About.route){
+                AboutScreen {
+                    navController.navigateUp()
+                }
             }
         }
     }

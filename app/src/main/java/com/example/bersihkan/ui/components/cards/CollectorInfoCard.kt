@@ -27,6 +27,7 @@ import com.example.bersihkan.ui.theme.Cerulean
 import com.example.bersihkan.ui.theme.Java
 import com.example.bersihkan.ui.theme.PacificBlue
 import com.example.bersihkan.ui.theme.Shapes
+import com.example.bersihkan.ui.theme.subHeadlineExtraSmall
 import com.example.bersihkan.ui.theme.subHeadlineTiny
 import com.example.bersihkan.ui.theme.textRegularSmall
 
@@ -42,8 +43,8 @@ fun CollectorInfoCard(
         color = Color.White,
         modifier = modifier
             .fillMaxWidth()
-            .height(125.dp)
-            .clip(Shapes.large)
+            .height(115.dp)
+            .clip(Shapes.medium)
     ) {
         Column(
             modifier = modifier.padding(16.dp)
@@ -88,8 +89,8 @@ fun CollectorInfoCard(
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        text = name,
-                        style = subHeadlineTiny.copy(
+                        text = phoneNumber,
+                        style = subHeadlineExtraSmall.copy(
                             color = PacificBlue,
                             fontWeight = FontWeight.Medium
                         )
@@ -101,7 +102,7 @@ fun CollectorInfoCard(
                 ) {
                     Text(
                         text = wasteHouse,
-                        style = subHeadlineTiny.copy(
+                        style = subHeadlineExtraSmall.copy(
                             color = Cerulean,
                             fontWeight = FontWeight.Medium
                         )

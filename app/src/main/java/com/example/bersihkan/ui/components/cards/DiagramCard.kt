@@ -16,8 +16,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.bersihkan.R
 import com.example.bersihkan.ui.components.DashedLine
 import com.example.bersihkan.ui.theme.BersihKanTheme
 import com.example.bersihkan.ui.theme.Cerulean
@@ -32,25 +34,28 @@ import com.example.bersihkan.ui.theme.textRegularSmall
 fun DiagramCard(
     plasticWeight: String,
     paperWeight: String,
-    metalWeight: String,
+    rubberWeight: String,
     modifier: Modifier = Modifier
 ) {
     Surface(
         color = Color.White,
         modifier = modifier
             .fillMaxWidth()
-            .height(100.dp)
-            .clip(Shapes.medium)
+            .height(80.dp)
+            .clip(Shapes.large)
     ){
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
         ) {
             DiagramDesc(
-                title = "Plastic",
-                weight = "1.2",
-                color = PacificBlue
+                title = stringResource(R.string.plastic),
+                weight = plasticWeight,
+                color = PacificBlue,
+                modifier = Modifier.weight(1f)
             )
             DashedLine(
                 strokeWidth = 4f,
@@ -59,13 +64,13 @@ fun DiagramCard(
                 vertical = true,
                 color = Loblolly,
                 modifier = Modifier
-                    .width(50.dp)
+                    .width(40.dp)
             )
             DiagramDesc(
-                title = "Paper",
-                weight = "0.8",
-                color = Java
-            )
+                title = stringResource(R.string.paper),
+                weight = paperWeight,
+                color = Java,
+                modifier = Modifier.weight(1f)            )
             DashedLine(
                 strokeWidth = 4f,
                 dashGap = 18f,
@@ -73,12 +78,13 @@ fun DiagramCard(
                 vertical = true,
                 color = Loblolly,
                 modifier = Modifier
-                    .width(50.dp)
+                    .width(40.dp)
             )
             DiagramDesc(
-                title = "Metal",
-                weight = "1.6",
-                color = Cerulean
+                title = stringResource(R.string.rubber),
+                weight = rubberWeight,
+                color = Cerulean,
+                modifier = Modifier.weight(1f)
             )
         }
     }
@@ -121,6 +127,6 @@ fun DiagramDesc(
 @Composable
 fun DiagramCardPreview() {
     BersihKanTheme {
-        DiagramCard(plasticWeight = "1.2", paperWeight = "0.8", metalWeight = "1.6")
+        DiagramCard(plasticWeight = "1.2", paperWeight = "0.8", rubberWeight = "1.6")
     }
 }

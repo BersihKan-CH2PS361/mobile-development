@@ -19,7 +19,9 @@ android {
             useSupportLibrary = true
         }
 
-        buildConfigField("String", "BASE_URL", "\"https://api-unggun-3wolmgwuaa-et.a.run.app/\"")
+        buildConfigField("String", "BASE_URL", "\"https://apibackend-mt6d6qnhja-de.a.run.app/\"")
+        buildConfigField("String", "MAPS_URL", "\"https://maps.googleapis.com/\"")
+        buildConfigField("String", "MAPS_TOKEN", "\"AIzaSyCmxT2On0bOukjMCmwXTTN7O3tbtvR8TlI\"")
     }
 
     buildTypes {
@@ -91,4 +93,8 @@ dependencies {
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1")
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
     implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+
+    implementation("androidx.compose.foundation:foundation:1.5.4")
+    implementation("androidx.compose.material:material:1.5.4")
+
 }

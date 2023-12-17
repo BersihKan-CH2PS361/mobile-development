@@ -8,5 +8,5 @@ enum class OrderStatus(val status: String, val text: Int) {
     PICK_UP("pick_up", R.string.pick_up_desc),
     ARRIVED("arrived", R.string.arrived_desc),
     DELIVERING("delivering", R.string.delivering_desc),
-    DELIVERED("Delivered", R.string.delivered_desc),
+    DELIVERED("delivered", R.string.delivered_desc),
 }

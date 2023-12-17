@@ -1,21 +1,17 @@
-package com.example.bersihkan.ui.components
+package com.example.bersihkan.ui.components.textFields
 
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -32,12 +28,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.bersihkan.R
 import com.example.bersihkan.ui.theme.BersihKanTheme
 import com.example.bersihkan.ui.theme.BlueLagoon
 import com.example.bersihkan.ui.theme.Grey
-import com.example.bersihkan.ui.theme.Shapes
 import com.example.bersihkan.ui.theme.subHeadlineExtraSmall
 import com.example.bersihkan.ui.theme.textMediumMedium
 

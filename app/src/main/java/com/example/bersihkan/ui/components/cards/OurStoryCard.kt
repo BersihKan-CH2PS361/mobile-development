@@ -32,7 +32,7 @@ fun OurStoryCard(
             .clip(Shapes.medium)
     ){
         Box(
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
             Text(
                 text = text,

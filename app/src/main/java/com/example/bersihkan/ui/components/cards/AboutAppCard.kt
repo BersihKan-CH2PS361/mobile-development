@@ -3,6 +3,7 @@ package com.example.bersihkan.ui.components.cards
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -49,11 +50,11 @@ fun AboutAppCard(
         color = Color.White,
         modifier = modifier
             .fillMaxWidth()
-            .height(140.dp)
+            .heightIn(100.dp)
             .clip(Shapes.medium)
     ){
         Box(
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
             Text(
                 text = annotatedText,

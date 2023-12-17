@@ -22,47 +22,38 @@ data class LoginResponse(
 
 data class User(
 
-	@field:SerializedName("role")
-	val role: String? = null,
-
-	@field:SerializedName("current_longitude")
-	val currentLongitude: Any? = null,
-
-	@field:SerializedName("last_login")
-	val lastLogin: String? = null,
-
-	@field:SerializedName("registered")
-	val registered: String? = null,
-
-	@field:SerializedName("last_logout")
-	val lastLogout: String? = null,
-
 	@field:SerializedName("password")
 	val password: String? = null,
 
-	@field:SerializedName("current_latitude")
-	val currentLatitude: Any? = null,
+	@field:SerializedName("role")
+	val role: String? = null,
 
 	@field:SerializedName("phone")
 	val phone: String? = null,
 
-	@field:SerializedName("collector_ID")
-	val collectorID: Any? = null,
+	@field:SerializedName("last_login")
+	val lastLogin: String? = null,
 
 	@field:SerializedName("name")
 	val name: String? = null,
 
-	@field:SerializedName("drop_latitude")
-	val dropLatitude: Any? = null,
+	@field:SerializedName("registered")
+	val registered: String? = null,
+
+	@field:SerializedName("facility_ID")
+	val facilityID: Any? = null,
 
 	@field:SerializedName("id")
 	val id: String? = null,
 
+	@field:SerializedName("facility_name")
+	val facilityName: Any? = null,
+
 	@field:SerializedName("email")
 	val email: String? = null,
 
-	@field:SerializedName("drop_longitude")
-	val dropLongitude: Any? = null,
+	@field:SerializedName("last_logout")
+	val lastLogout: String? = null,
 
 	@field:SerializedName("username")
 	val username: String? = null
@@ -99,17 +90,11 @@ data class DetailUserResponse(
 // used for Detail Order, Detail History, Ongoing Order Collector
 data class DetailOrderResponse(
 
-	@field:SerializedName("DetailOrderResponse")
-	val detailOrderResponse: List<DetailOrderResponseItem?>? = null
-)
-
-data class DetailOrderResponseItem(
-
 	@field:SerializedName("pickup_fee")
 	val pickupFee: Int? = null,
 
 	@field:SerializedName("pickup_longitude")
-	val pickupLongitude: Any? = null,
+	val pickupLongitude: Float? = null,
 
 	@field:SerializedName("user_notes")
 	val userNotes: String? = null,
@@ -136,13 +121,20 @@ data class DetailOrderResponseItem(
 	val userId: String? = null,
 
 	@field:SerializedName("pickup_latitude")
-	val pickupLatitude: Any? = null,
+	val pickupLatitude: Float? = null,
+
+	@field:SerializedName("collector_id")
+	val collectorId: String? = null,
 
 	@field:SerializedName("recycle_fee")
 	val recycleFee: Int? = null,
 
 	@field:SerializedName("order_id")
-	val orderId: Int? = null
+	val orderId: Int? = null,
+
+	@field:SerializedName("facility_name")
+	val facilityName: String? = null,
+
 )
 
 data class ContentsResponse(
@@ -155,4 +147,47 @@ data class ContentsResponse(
 
 	@field:SerializedName("id")
 	val id: Int? = null
+)
+
+data class DetailCollectorResponse(
+
+	@field:SerializedName("user_id")
+	val userId: String? = null,
+
+	@field:SerializedName("phone")
+	val phone: String? = null,
+
+	@field:SerializedName("name")
+	val name: String? = null,
+
+	@field:SerializedName("facility_id")
+	val facilityId: Int? = null,
+
+	@field:SerializedName("facility_name")
+	val facilityName: String? = null,
+
+	@field:SerializedName("email")
+	val email: String? = null,
+
+	@field:SerializedName("username")
+	val username: String? = null
+)
+
+data class DetailOrderAll(
+
+	var detailOrderResponse: DetailOrderResponse? = null,
+
+	var detailCollectorResponse: DetailCollectorResponse? = null,
+
+	var addressFromLatLng: String? = null
+)
+
+data class GeocodingResponse(
+	val results: List<Result>,
+	val status: String
+)
+
+data class Result(
+	val formatted_address: String
+	// Add other address components as needed
 )

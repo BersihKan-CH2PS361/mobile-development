@@ -4,7 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.example.bersihkan.data.local.pref.UserPreference
 import com.example.bersihkan.data.local.pref.dataStore
-import com.example.bersihkan.data.remote.retrofit.ApiConfig
+import com.example.bersihkan.data.remote.retrofit.cc.ApiConfig
 import com.example.bersihkan.data.repository.DataRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking

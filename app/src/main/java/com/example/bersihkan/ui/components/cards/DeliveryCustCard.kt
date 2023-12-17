@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -57,7 +58,7 @@ fun DeliveryCustCard(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(465.dp)
-            .clip(Shapes.large)
+            .clip(Shapes.medium)
     ){
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -134,7 +135,7 @@ fun DeliveryCustCard(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = if(wasteQty > 0) wasteQty.toString() else "0",
+                                text = if(wasteQty > 0) "$wasteQty kg" else "0 kg",
                                 style = textRegularExtraSmall.copy(
                                     color = Color.Black,
                                     textAlign = TextAlign.Start,
@@ -241,7 +242,7 @@ fun ColumnIcons(
     ongoingStatus: OrderStatus,
     modifier: Modifier = Modifier
 ) {
-    val orderStatus = OrderStatus.values()
+    val orderStatus = OrderStatus.values().reversedArray()
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween,
@@ -270,7 +271,7 @@ fun ColumnIcons(
                     modifier = Modifier.size(16.dp)
                 )
             }
-            if(status != OrderStatus.DELIVERED){
+            if(status != OrderStatus.INITIAL){
                 Icon(
                     painter = painterResource(id = R.drawable.ic_vertical_dashed_line),
                     contentDescription = null,
@@ -287,7 +288,7 @@ fun ColumnStatus(
     ongoingStatus: OrderStatus,
     modifier: Modifier = Modifier
 ) {
-    val orderStatus = OrderStatus.values()
+    val orderStatus = OrderStatus.values().reversedArray()
     Column(
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.SpaceBetween,
@@ -298,7 +299,7 @@ fun ColumnStatus(
                 Text(
                     text = stringResource(id = status.text),
                     style = textRegularSmall.copy(
-                        color = Color.Black
+                        color = Color.Black,
                     )
                 )
             } else {
