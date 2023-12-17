@@ -62,131 +62,131 @@ val Typography = Typography(
 val headlineExtraLarge = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.Bold,
-    fontSize = 59.sp,
+    fontSize = 60.sp,
 )
 val headlineLarge = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.Bold,
-    fontSize = 28.sp,
+    fontSize = 29.sp,
 )
 val headlineMedium = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.Bold,
-    fontSize = 25.sp,
+    fontSize = 26.sp,
 )
 val headlineSmall = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.Bold,
-    fontSize = 21.sp,
+    fontSize = 22.sp,
 )
 val headlineExtraSmall = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.Bold,
-    fontSize = 15.sp,
+    fontSize = 16.sp,
 )
 
 // subHeadlines
 val subHeadlineExtraLarge = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.SemiBold,
-    fontSize = 17.sp,
+    fontSize = 18.sp,
 )
 val subHeadlineLarge = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.SemiBold,
-    fontSize = 15.sp,
+    fontSize = 16.sp,
 )
 val subHeadlineMedium = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.SemiBold,
-    fontSize = 14.sp,
+    fontSize = 15.sp,
 )
 val subHeadlineSmall = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.SemiBold,
-    fontSize = 13.sp,
+    fontSize = 14.sp,
 )
 val subHeadlineExtraSmall = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.SemiBold,
-    fontSize = 10.sp,
+    fontSize = 11.sp,
 )
 val subHeadlineTiny = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.SemiBold,
-    fontSize = 9.sp,
+    fontSize = 10.sp,
 )
 
 // textMedium
 val textMediumExtraLarge = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.Medium,
-    fontSize = 23.sp,
+    fontSize = 24.sp,
 )
 val textMediumLarge = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.Medium,
-    fontSize = 18.sp,
+    fontSize = 19.sp,
 )
 val textMediumMedium = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.Medium,
-    fontSize = 15.sp,
+    fontSize = 16.sp,
 )
 val textMediumSmall = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.Medium,
-    fontSize = 13.sp,
+    fontSize = 14.sp,
 )
 val textMediumExtraSmall = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.Medium,
-    fontSize = 12.sp,
+    fontSize = 13.sp,
 )
 val textMediumTiny = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.Medium,
-    fontSize = 11.sp,
+    fontSize = 12.sp,
 )
 val textMediumExtraTiny = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.Medium,
-    fontSize = 7.5.sp,
+    fontSize = 8.5.sp,
 )
 
 // textRegular
 val textRegularExtraLarge = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.Normal,
-    fontSize = 23.sp,
+    fontSize = 24.sp,
 )
 val textRegularLarge = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.Normal,
-    fontSize = 18.sp,
+    fontSize = 19.sp,
 )
 val textRegularMedium = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.Normal,
-    fontSize = 15.sp,
+    fontSize = 16.sp,
 )
 val textRegularSmall = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.Normal,
-    fontSize = 13.sp,
+    fontSize = 14.sp,
 )
 val textRegularExtraSmall = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.Normal,
-    fontSize = 12.sp,
+    fontSize = 13.sp,
 )
 val textRegularTiny = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.Normal,
-    fontSize = 11.sp,
+    fontSize = 12.sp,
 )
 val textRegularExtraTiny = TextStyle(
     fontFamily = fontFamily,
     fontWeight = FontWeight.Normal,
-    fontSize = 7.5.sp,
+    fontSize = 8.5.sp,
 )

@@ -232,7 +232,11 @@ fun BersihKanApp(
                         restoreState = true
                         launchSingleTop = true
                     }
-                })
+                },
+                    navigateToBack = {
+                        navController.navigateUp()
+                    }
+                )
             }
             composable(Screen.About.route){
                 AboutScreen {

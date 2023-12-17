@@ -169,6 +169,19 @@ class DataRepository private constructor(
                     email = user.email
                 )
             )
+            userPreference.saveSession(
+                UserModel(
+                    id = user.id,
+                    email = user.email,
+                    username = user.username,
+                    role = user.role,
+                    password = user.password,
+                    token = user.token,
+                    isLogin = true,
+                    name = name
+
+                )
+            )
             Log.d(TAG, "coba sesudah Post")
             Log.d(TAG, "register: $response")
             val message = response.status
@@ -330,7 +343,7 @@ class DataRepository private constructor(
 
     companion object {
         private const val TAG = "DataRepository"
-        private const val MAPS_API_KEY = "AIzaSyCmxT2On0bOukjMCmwXTTN7O3tbtvR8TlI"
+        private const val MAPS_API_KEY = BuildConfig.MAPS_TOKEN
 
         @Volatile
         private var instance: DataRepository? = null

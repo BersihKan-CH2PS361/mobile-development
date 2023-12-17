@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -56,6 +58,7 @@ import com.example.bersihkan.ui.theme.textMediumSmall
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bersihkan.data.di.Injection
 import com.example.bersihkan.ui.components.modal.ConfirmDialog
+import com.example.bersihkan.ui.components.topBar.TopBar
 import com.example.bersihkan.ui.screen.ViewModelFactory
 import com.example.kekkomiapp.ui.common.UiState
 
@@ -65,6 +68,7 @@ fun EditProfileScreen(
     viewModel: EditProfileViewModel = viewModel(
         factory = ViewModelFactory(Injection.provideRepository(LocalContext.current))
     ),
+    navigateToBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -111,7 +115,8 @@ fun EditProfileScreen(
                         saveOnClick = {
                             viewModel.saveProfile()
                             saveOnClick()
-                        }
+                        },
+                        navigateToBack = navigateToBack
                     )
                 }
             }
@@ -126,7 +131,8 @@ fun EditProfileScreen(
                     isEnabled = false,
                     saveOnClick = {},
                     isError = true,
-                    textError = userData.errorMsg
+                    textError = userData.errorMsg,
+                    navigateToBack = navigateToBack
                 )
             }
         }
@@ -146,6 +152,7 @@ fun EditProfileContent(
     textError: String = "",
     isEnabled: Boolean,
     saveOnClick: () -> Unit,
+    navigateToBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -172,101 +179,117 @@ fun EditProfileContent(
             color = Color.White,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(590.dp)
+                .height(620.dp)
                 .align(Alignment.BottomCenter)
         ) {
         }
-        if(isError){
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(220.dp)
-            ) {
-                Text(
-                    text = textError,
-                    style = textMediumMedium,
-                    color = Grey,
-                    modifier = Modifier.align(Alignment.BottomCenter)
+        LazyColumn(
+            state = rememberLazyListState()
+        ){
+            item {
+                TopBar(
+                    text = stringResource(id = R.string.edit_profile),
+                    onBackClick = navigateToBack,
+                    color = Color.White,
+                    enableOnBack = true
                 )
             }
-        } else {
-            Column(
-                modifier = Modifier.padding(horizontal = 20.dp)
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(220.dp)
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_user_profile_2),
-                        contentDescription = null,
+            if(isError){
+                item {
+                    Box(
+                        contentAlignment = Alignment.Center,
                         modifier = Modifier
-                            .size(150.dp)
-                            .clip(CircleShape)
-                            .align(Alignment.BottomCenter)
-                    )
-                }
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .padding(vertical = 15.dp)
-                        .fillMaxWidth()
-                ) {
-                    Text(
-                        text = username,
-                        style = headlineSmall.copy(
-                            color = Color.Black,
-                            textAlign = TextAlign.Center
-                        )
-                    )
-                    Text(
-                        text = email,
-                        style = textMediumSmall.copy(
+                            .fillMaxWidth()
+                            .height(220.dp)
+                    ) {
+                        Text(
+                            text = textError,
+                            style = textMediumMedium,
                             color = Grey,
-                            textAlign = TextAlign.Center
+                            modifier = Modifier.align(Alignment.BottomCenter)
                         )
-                    )
+                    }
                 }
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(vertical = 30.dp)
-                ){
-                    TextFieldContent(
-                        title = stringResource(R.string.name),
-                        content = {
-                            NameTextField(
-                                input = inputName,
-                                onInputChange = onNameChange
+            } else {
+                item {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 20.dp)
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_user_profile_2),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(150.dp)
+                                    .clip(CircleShape)
+                                    .align(Alignment.BottomCenter)
                             )
                         }
-                    )
-                    TextFieldContent(
-                        title = stringResource(R.string.phone_number),
-                        content = {
-                            PhoneNumberTextField(
-                                input = inputPhoneNumber,
-                                onInputChange = onPhoneNumberChange
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .padding(vertical = 15.dp)
+                                .fillMaxWidth()
+                        ) {
+                            Text(
+                                text = username,
+                                style = headlineSmall.copy(
+                                    color = Color.Black,
+                                    textAlign = TextAlign.Center
+                                )
+                            )
+                            Text(
+                                text = email,
+                                style = textMediumSmall.copy(
+                                    color = Grey,
+                                    textAlign = TextAlign.Center
+                                )
                             )
                         }
-                    )
-                }
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .padding(vertical = 10.dp)
-                        .fillMaxWidth()
-                ) {
-                    MediumButton(
-                        text = stringResource(id = R.string.save),
-                        isEnabled = isEnabled,
-                        color = BlueLagoon,
-                        onClick = { isDialogShowed = false },
-                        modifier = Modifier
-                            .padding(6.dp, 2.dp)
-                    )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(vertical = 30.dp)
+                        ){
+                            TextFieldContent(
+                                title = stringResource(R.string.name),
+                                content = {
+                                    NameTextField(
+                                        input = inputName,
+                                        onInputChange = onNameChange
+                                    )
+                                }
+                            )
+                            TextFieldContent(
+                                title = stringResource(R.string.phone_number),
+                                content = {
+                                    PhoneNumberTextField(
+                                        input = inputPhoneNumber,
+                                        onInputChange = onPhoneNumberChange
+                                    )
+                                }
+                            )
+                        }
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .padding(vertical = 10.dp)
+                                .fillMaxWidth()
+                        ) {
+                            MediumButton(
+                                text = stringResource(id = R.string.save),
+                                isEnabled = isEnabled,
+                                color = BlueLagoon,
+                                onClick = { isDialogShowed = false },
+                                modifier = Modifier
+                                    .padding(6.dp, 2.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -290,6 +313,7 @@ fun EditContentPreview() {
             onPhoneNumberChange = {},
             saveOnClick = { /*TODO*/ },
             isEnabled = true,
+            navigateToBack = {}
         )
     }
 }

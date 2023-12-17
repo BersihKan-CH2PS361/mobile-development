@@ -79,6 +79,7 @@ fun HomeScreen(
 ) {
 
     viewModel.getSession()
+
     viewModel.userModel.collectAsState().value.let { userModel ->
         if(!userModel.isLogin){
             navigateToWelcomePage1()
