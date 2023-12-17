@@ -38,7 +38,7 @@ fun StatisticsCard(
         color = backgroundColor,
         contentColor = Color.White,
         modifier = modifier
-            .size(175.dp, 165.dp)
+            .size(170.dp, 160.dp)
             .clip(Shapes.large)
     ) {
         Column(

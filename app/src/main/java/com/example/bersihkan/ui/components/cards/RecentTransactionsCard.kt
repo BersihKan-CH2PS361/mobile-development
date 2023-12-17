@@ -48,12 +48,12 @@ fun RecentTransactionsCard(
         modifier = modifier
             .border(BorderStroke(2.dp, BlueLagoon), Shapes.medium)
             .fillMaxWidth()
-            .height(130.dp)
+            .height(120.dp)
             .clip(Shapes.medium)
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
             Text(
                 text = date,

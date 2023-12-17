@@ -87,45 +87,48 @@ fun LoginScreen(
         isEnable = isEnabled
     )
 
-    viewModel.response.collectAsState().value.let { response ->
+    viewModel.response.collectAsState().value.let { data ->
         var showDialog by remember {
             mutableStateOf(true)
         }
-        when(response){
-            is UiState.Initial -> {}
-            is UiState.Loading -> {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    CircularProgressIndicator(
-                        color = Grey,
-                        modifier = Modifier
-                            .size(50.dp)
-                            .align(Alignment.Center)
-                    )
-                }
-            }
-            is UiState.Success -> {
-                val data = response.data
-                val role = data.user?.role
-                RegisterLoginDialog(
-                    title = stringResource(R.string.welcome_back),
-                    message = stringResource(R.string.login_success),
-                    onDismiss = {
-                        showDialog = false
-                        if(role == UserRole.USER.role) navigateToHomeCustomer() else navigateToHomeCollector()
+        data.getContentIfNotHandled().let { response ->
+            when(response){
+                is UiState.Initial -> {}
+                is UiState.Loading -> {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        CircularProgressIndicator(
+                            color = Grey,
+                            modifier = Modifier
+                                .size(50.dp)
+                                .align(Alignment.Center)
+                        )
                     }
-                )
-            }
-            is UiState.Error -> {
-                if(showDialog){
+                }
+                is UiState.Success -> {
+                    val data = response.data
+                    val role = data.user?.role
                     RegisterLoginDialog(
-                        title = stringResource(R.string.error),
-                        message = response.errorMsg,
-                        onDismiss = { showDialog = false }
+                        title = stringResource(R.string.welcome_back),
+                        message = stringResource(R.string.login_success),
+                        onDismiss = {
+                            showDialog = false
+                            if(role == UserRole.USER.role) navigateToHomeCustomer() else navigateToHomeCollector()
+                        }
                     )
                 }
+                is UiState.Error -> {
+                    if(showDialog){
+                        RegisterLoginDialog(
+                            title = stringResource(R.string.error),
+                            message = response.errorMsg,
+                            onDismiss = { showDialog = false }
+                        )
+                    }
+                }
+                else -> {}
             }
         }
     }
@@ -186,23 +189,11 @@ fun LoginContent(
         }
         item {
             TextFieldContent(
-                title = stringResource(id = R.string.username),
+                title = stringResource(R.string.username_or_email),
                 content = {
                     UsernameTextField(
                         input = inputUsername,
                         onInputChange = onUsernameChange,
-                    )
-                }
-            )
-        }
-        item {
-            TextFieldContent(
-                title = stringResource(id = R.string.email),
-                content = {
-                    EmailTextField(
-                        input = inputEmail,
-                        onInputChange = onEmailChange,
-                        isError = errorEmail
                     )
                 }
             )

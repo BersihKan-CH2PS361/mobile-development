@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -35,24 +36,23 @@ import com.example.bersihkan.ui.theme.textRegularMedium
 @Composable
 fun HistoryCard(
     date: String,
-    orderId: String,
     type: String,
     weight: String,
     dropPoint: String,
-    total_fee: String,
+    totalFee: String,
     modifier: Modifier = Modifier
 ) {
     Surface(
         color = Botticelli,
         modifier = modifier
             .fillMaxWidth()
-            .height(140.dp)
+            .height(115.dp)
             .clip(Shapes.medium)
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
-                .padding(20.dp)
+                .padding(16.dp)
                 .fillMaxWidth()
         ) {
             Row(
@@ -62,17 +62,7 @@ fun HistoryCard(
                 Text(
                     text = date,
                     style = subHeadlineTiny,
-                    color = Grey,
-                    modifier = Modifier
-                        .weight(1f)
-                )
-                Text(
-                    text = "Order No.$orderId",
-                    style = subHeadlineTiny,
-                    textAlign = TextAlign.End,
-                    color = BlueLagoon,
-                    modifier = Modifier
-                        .weight(1f)
+                    color = Grey
                 )
             }
             Row(
@@ -126,10 +116,12 @@ fun HistoryCard(
                     color = Cerulean,
                     contentColor = Color.White,
                     modifier = Modifier
-                        .clip(Shapes.extraSmall)
+                        .clip(Shapes.extraSmall.copy(
+                            all = CornerSize(6.dp)
+                        ))
                 ) {
                     Text(
-                        text = "Rp.$total_fee",
+                        text = "Rp.$totalFee",
                         style = subHeadlineTiny,
                         modifier = Modifier
                             .padding(vertical = 2.dp, horizontal = 8.dp)
@@ -146,11 +138,10 @@ fun HistoryCardPreview() {
     BersihKanTheme {
         HistoryCard(
             date = "Sunday, November 26 2023",
-            orderId = "10",
             type = "Plastic",
             weight = "1.2",
             dropPoint = "Rumah Plastik Cempaka",
-            total_fee = "20000"
+            totalFee = "20000"
         )
     }
 }

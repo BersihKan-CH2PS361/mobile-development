@@ -31,7 +31,7 @@ import com.example.bersihkan.utils.WasteType
 @Composable
 fun OrderSummaryCard(
     wasteFee: Int,
-    wasteType: WasteType,
+    wasteType: String,
     wasteQty: Int,
     modifier: Modifier = Modifier
 ) {
@@ -40,8 +40,8 @@ fun OrderSummaryCard(
         color = Color.White,
         modifier = modifier
             .fillMaxWidth()
-            .height(185.dp)
-            .clip(Shapes.large)
+            .height(180.dp)
+            .clip(Shapes.medium)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -50,7 +50,7 @@ fun OrderSummaryCard(
         ) {
             CardSummarySection(
                 title = stringResource(id = R.string.waste_details),
-                text1 = if(wasteType == WasteType.INITIAL || wasteQty <= 0) "-  • 0 kg" else "${wasteType.type}  • $wasteQty kg",
+                text1 = if(wasteType == "" || wasteQty <= 0) "-  • 0 kg" else "$wasteType  • $wasteQty kg",
                 text2 = "Rp.$wasteFee"
             )
             CardSummarySection(
@@ -128,7 +128,7 @@ fun OrderSummaryCardPreview() {
     BersihKanTheme {
         OrderSummaryCard(
             wasteFee = 0,
-            wasteType = WasteType.INITIAL,
+            wasteType = WasteType.INITIAL.type,
             wasteQty = 0,
         )
     }

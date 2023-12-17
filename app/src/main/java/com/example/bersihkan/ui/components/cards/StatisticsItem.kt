@@ -1,6 +1,5 @@
-package com.example.bersihkan.ui.components
+package com.example.bersihkan.ui.components.cards
 
-import android.graphics.drawable.Icon
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth

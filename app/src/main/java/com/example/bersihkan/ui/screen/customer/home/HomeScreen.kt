@@ -1,7 +1,9 @@
 package com.example.bersihkan.ui.screen.customer.home
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,7 +43,7 @@ import com.example.bersihkan.R
 import com.example.bersihkan.data.di.Injection
 import com.example.bersihkan.data.local.DataDummy
 import com.example.bersihkan.data.remote.response.ContentsResponse
-import com.example.bersihkan.data.remote.response.DetailOrderResponseItem
+import com.example.bersihkan.data.remote.response.DetailOrderResponse
 import com.example.bersihkan.ui.components.cards.FunFactsCard
 import com.example.bersihkan.ui.components.section.HomeSection
 import com.example.bersihkan.ui.components.cards.OrderNowCard
@@ -60,6 +63,7 @@ import com.example.bersihkan.ui.theme.textRegularExtraLarge
 import com.example.bersihkan.utils.Statistics
 import com.example.bersihkan.helper.calculateStatisticsTotals
 import com.example.bersihkan.helper.convertToDate
+import com.example.bersihkan.ui.components.cards.OrderOngoingCard
 import com.example.bersihkan.utils.UserRole
 import com.example.kekkomiapp.ui.common.UiState
 
@@ -80,12 +84,17 @@ fun HomeScreen(
             navigateToWelcomePage1()
         }
     }
-    viewModel.fetchDataIfNeeded()
+    LaunchedEffect(key1 = viewModel, block = {
+        viewModel.refreshData()
+    })
 
     val user = viewModel.userModel.collectAsState().value
 
-    val histories = viewModel.histories.collectAsState().value
-    val contents = viewModel.contents.collectAsState().value
+    val histories = viewModel.histories.collectAsState(initial = UiState.Loading).value
+    val contents = viewModel.contents.collectAsState(initial = UiState.Loading).value
+    val ongoingOrder = viewModel.ongoingOrder.collectAsState(initial = UiState.Loading).value
+
+    var isRefreshing by remember { mutableStateOf(false) }
 
     HomeContent(
         query = "",
@@ -96,7 +105,11 @@ fun HomeScreen(
         navigateToDetail = { /*TODO*/ },
         name = user.name,
         profile = if (user.role == UserRole.USER) R.drawable.ic_user_profile_2 else R.drawable.ic_collector_profile,
-        navigateToStatistics = { /*TODO*/ })
+        navigateToStatistics = { /*TODO*/ },
+        ongoingOrder = ongoingOrder,
+        navigateToDelivery = {},
+        modifier = modifier
+    )
 
 //    Box(
 //        modifier = modifier.fillMaxSize(),
@@ -112,76 +125,101 @@ fun HomeContent(
     query: String,
     onQueryChange: (String) -> Unit,
     onClickOrderCard: () -> Unit,
-    histories: UiState<List<DetailOrderResponseItem>>,
+    histories: UiState<List<DetailOrderResponse>>,
     contents: UiState<List<ContentsResponse>>,
+    ongoingOrder: UiState<DetailOrderResponse>,
     navigateToDetail: () -> Unit,
     name: String,
     profile: Int,
     navigateToStatistics: () -> Unit,
+    navigateToDelivery: () -> Unit,
     modifier: Modifier = Modifier
 ) {
 
-    LazyColumn(
-        state = rememberLazyListState(),
-        modifier = modifier
-            .padding(bottom = 20.dp)
-            .background(Color.White)
-    ) {
-        item {
-            Box {
-                Banner(
-                    name = name,
-                    profile = profile
-                )
-                OrderNowCard(
-                    query = query,
-                    onQueryChange = onQueryChange,
-                    onClick = onClickOrderCard,
-                    modifier = Modifier
-                        .padding(horizontal = 20.dp)
-                        .offset(0.dp, 150.dp)
-                )
+    Box {
+        LazyColumn(
+            state = rememberLazyListState(),
+            modifier = modifier
+                .background(Color.White)
+        ) {
+            item {
+                Box {
+                    Banner(
+                        name = name,
+                        profile = profile
+                    )
+                    OrderNowCard(
+                        query = query,
+                        onQueryChange = onQueryChange,
+                        onClick = onClickOrderCard,
+                        modifier = Modifier
+                            .padding(horizontal = 20.dp)
+                            .offset(0.dp, 150.dp)
+                    )
+                }
             }
-        }
-        item {
-            histories.let { data ->
-                when(data){
-                    is UiState.Initial -> {
+            item {
+                histories.let { data ->
+                    when(data){
+                        is UiState.Initial -> {
 
-                    }
-                    is UiState.Loading -> {
-                        HomeSection(
-                            title = stringResource(R.string.statistics),
-                            content = {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(175.dp)
-                                ) {
-                                    CircularProgressIndicator(
-                                        color = Grey,
+                        }
+                        is UiState.Loading -> {
+                            HomeSection(
+                                title = stringResource(R.string.statistics),
+                                content = {
+                                    Box(
+                                        contentAlignment = Alignment.Center,
                                         modifier = Modifier
-                                            .size(50.dp)
-                                            .align(Alignment.Center)
-                                    )
-                                }
-                            },
-                            isStatistic = true,
-                            navigateToStatistic = navigateToStatistics,
-                            modifier = Modifier.padding(top = 90.dp, start = 20.dp)
-                        )
-                    }
-                    is UiState.Success -> {
-                        val statistics = calculateStatisticsTotals(data.data, LocalContext.current)
-                        HomeSection(
-                            title = stringResource(R.string.statistics),
-                            content = {
-                                if (statistics.isNotEmpty()){
-                                    StatisticCardRow(
-                                        statistics = statistics,
-                                    )
-                                } else {
+                                            .fillMaxWidth()
+                                            .height(175.dp)
+                                    ) {
+                                        CircularProgressIndicator(
+                                            color = Grey,
+                                            modifier = Modifier
+                                                .size(30.dp)
+                                                .align(Alignment.Center)
+                                        )
+                                    }
+                                },
+                                isStatistic = true,
+                                navigateToStatistic = navigateToStatistics,
+                                modifier = Modifier.padding(top = 90.dp, start = 20.dp)
+                            )
+                        }
+                        is UiState.Success -> {
+                            val statistics = calculateStatisticsTotals(data.data, LocalContext.current)
+                            HomeSection(
+                                title = stringResource(R.string.statistics),
+                                content = {
+                                    if (statistics.isNotEmpty()){
+                                        StatisticCardRow(
+                                            statistics = statistics,
+                                        )
+                                    } else {
+                                        Box(
+                                            contentAlignment = Alignment.Center,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(175.dp)
+                                        ) {
+                                            Text(
+                                                text = stringResource(R.string.no_data_found),
+                                                style = textMediumMedium,
+                                                color = Grey
+                                            )
+                                        }
+                                    }
+                                },
+                                isStatistic = true,
+                                navigateToStatistic = navigateToStatistics,
+                                modifier = Modifier.padding(top = 90.dp, start = 20.dp)
+                            )
+                        }
+                        is UiState.Error -> {
+                            HomeSection(
+                                title = stringResource(R.string.statistics),
+                                content = {
                                     Box(
                                         contentAlignment = Alignment.Center,
                                         modifier = Modifier
@@ -189,78 +227,78 @@ fun HomeContent(
                                             .height(175.dp)
                                     ) {
                                         Text(
-                                            text = stringResource(R.string.no_data_found),
+                                            text = data.errorMsg,
                                             style = textMediumMedium,
                                             color = Grey
                                         )
                                     }
-                                }
-                            },
-                            isStatistic = true,
-                            navigateToStatistic = navigateToStatistics,
-                            modifier = Modifier.padding(top = 90.dp, start = 20.dp)
-                        )
-                    }
-                    is UiState.Error -> {
-                        HomeSection(
-                            title = stringResource(R.string.statistics),
-                            content = {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(175.dp)
-                                ) {
-                                    Text(
-                                        text = data.errorMsg,
-                                        style = textMediumMedium,
-                                        color = Grey
-                                    )
-                                }
-                            },
-                            isStatistic = true,
-                            navigateToStatistic = navigateToStatistics,
-                            modifier = Modifier.padding(top = 90.dp, start = 20.dp)
-                        )
+                                },
+                                isStatistic = true,
+                                navigateToStatistic = navigateToStatistics,
+                                modifier = Modifier.padding(top = 90.dp, start = 20.dp)
+                            )
+                        }
                     }
                 }
             }
-        }
-        item {
-            contents.let { data ->
-                when(data){
-                    is UiState.Initial -> {}
-                    is UiState.Loading -> {
-                        HomeSection(
-                            title = stringResource(R.string.fun_facts),
-                            content = {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(128.dp)
-                                ) {
-                                    CircularProgressIndicator(
-                                        color = Grey,
+            item {
+                contents.let { data ->
+                    when(data){
+                        is UiState.Initial -> {}
+                        is UiState.Loading -> {
+                            HomeSection(
+                                title = stringResource(R.string.fun_facts),
+                                content = {
+                                    Box(
+                                        contentAlignment = Alignment.Center,
                                         modifier = Modifier
-                                            .size(50.dp)
-                                            .align(Alignment.Center)
-                                    )
-                                }
-                            },
-                            navigateToStatistic = {},
-                            modifier = Modifier
-                                .padding(top = 30.dp, start = 20.dp)
-                        )
-                    }
-                    is UiState.Success -> {
-                        val contents = data.data
-                        HomeSection(
-                            title = stringResource(R.string.fun_facts),
-                            content = {
-                                if (contents.isNotEmpty()){
-                                    FunFactsCardRow(contents = contents)
-                                } else {
+                                            .fillMaxWidth()
+                                            .height(128.dp)
+                                    ) {
+                                        CircularProgressIndicator(
+                                            color = Grey,
+                                            modifier = Modifier
+                                                .size(30.dp)
+                                                .align(Alignment.Center)
+                                        )
+                                    }
+                                },
+                                navigateToStatistic = {},
+                                modifier = Modifier
+                                    .padding(top = 30.dp, start = 20.dp)
+                            )
+                        }
+                        is UiState.Success -> {
+                            val contents = data.data
+                            HomeSection(
+                                title = stringResource(R.string.fun_facts),
+                                content = {
+                                    if (contents.isNotEmpty()){
+                                        FunFactsCardRow(contents = contents)
+                                    } else {
+                                        Box(
+                                            contentAlignment = Alignment.Center,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(128.dp)
+                                        ) {
+                                            Text(
+                                                text = stringResource(id = R.string.no_data_found),
+                                                style = textMediumMedium,
+                                                color = Grey
+                                            )
+                                        }
+                                    }
+                                },
+                                navigateToStatistic = {},
+                                modifier = Modifier
+                                    .padding(top = 30.dp, start = 20.dp)
+                            )
+                        }
+                        is UiState.Error -> {
+                            HomeSection(
+                                title = stringResource(R.string.fun_facts),
+                                content = {
                                     Box(
                                         contentAlignment = Alignment.Center,
                                         modifier = Modifier
@@ -268,83 +306,92 @@ fun HomeContent(
                                             .height(128.dp)
                                     ) {
                                         Text(
-                                            text = stringResource(id = R.string.no_data_found),
+                                            text = data.errorMsg,
                                             style = textMediumMedium,
                                             color = Grey
                                         )
                                     }
-                                }
-                            },
-                            navigateToStatistic = {},
-                            modifier = Modifier
-                                .padding(top = 30.dp, start = 20.dp)
-                        )
+                                },
+                                navigateToStatistic = {},
+                                modifier = Modifier
+                                    .padding(top = 30.dp, start = 20.dp)
+                            )
+                        }
                     }
-                    is UiState.Error -> {
-                        HomeSection(
-                            title = stringResource(R.string.fun_facts),
-                            content = {
+                }
+            }
+            item {
+                Text(
+                    text = stringResource(R.string.recent_transactions),
+                    style = headlineSmall,
+                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 30.dp)
+                )
+            }
+            histories.let { data ->
+                when(data){
+                    is UiState.Initial -> {}
+                    is UiState.Loading -> {
+                        item {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(80.dp)
+                            ) {
+                                CircularProgressIndicator(
+                                    color = Grey,
+                                    modifier = Modifier
+                                        .size(30.dp)
+                                        .align(Alignment.Center)
+                                )
+                            }
+                        }
+                    }
+                    is UiState.Success -> {
+                        val hist = data.data
+                        if(hist.isNotEmpty()){
+                            items(hist, key = { it.orderId!! }){ history ->
+                                if(history == hist.last()){
+                                    RecentTransactionsCard(
+                                        date = convertToDate(history.orderDatetime ?: "").toString(),
+                                        address = history.pickupDatetime ?: "",
+                                        type = history.wasteType ?: "",
+                                        weight = history.wasteQty.toString(),
+                                        modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 30.dp)
+                                    )
+                                } else {
+                                    RecentTransactionsCard(
+                                        date = convertToDate(
+                                            history.orderDatetime ?: ""
+                                        ).toString(),
+                                        address = history.pickupDatetime ?: "",
+                                        type = history.wasteType ?: "",
+                                        weight = history.wasteQty.toString(),
+                                        modifier = Modifier.padding(
+                                            horizontal = 20.dp,
+                                            vertical = 10.dp
+                                        )
+                                    )
+                                }
+                            }
+                        } else {
+                            item {
                                 Box(
                                     contentAlignment = Alignment.Center,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(128.dp)
+                                        .height(80.dp)
                                 ) {
                                     Text(
-                                        text = data.errorMsg,
+                                        text = stringResource(id = R.string.no_data_found),
                                         style = textMediumMedium,
                                         color = Grey
                                     )
                                 }
-                            },
-                            navigateToStatistic = {},
-                            modifier = Modifier
-                                .padding(top = 30.dp, start = 20.dp)
-                        )
-                    }
-                }
-            }
-        }
-        item {
-            Text(
-                text = stringResource(R.string.recent_transactions),
-                style = headlineSmall,
-                modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 30.dp)
-            )
-        }
-        histories.let { data ->
-            when(data){
-                is UiState.Initial -> {}
-                is UiState.Loading -> {
-                    item {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(80.dp)
-                        ) {
-                            CircularProgressIndicator(
-                                color = Grey,
-                                modifier = Modifier
-                                    .size(50.dp)
-                                    .align(Alignment.Center)
-                            )
+                            }
                         }
                     }
-                }
-                is UiState.Success -> {
-                    val hist = data.data
-                    if(hist.isNotEmpty()){
-                        items(hist, key = { it.orderId!! }){ history ->
-                            RecentTransactionsCard(
-                                date = convertToDate(history.orderDatetime ?: "").toString(),
-                                address = history.pickupDatetime ?: "",
-                                type = history.wasteType ?: "",
-                                weight = history.wasteQty.toString(),
-                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
-                            )
-                        }
-                    } else {
+                    is UiState.Error -> {
                         item {
                             Box(
                                 contentAlignment = Alignment.Center,
@@ -353,7 +400,7 @@ fun HomeContent(
                                     .height(80.dp)
                             ) {
                                 Text(
-                                    text = stringResource(id = R.string.no_data_found),
+                                    text = data.errorMsg,
                                     style = textMediumMedium,
                                     color = Grey
                                 )
@@ -361,21 +408,31 @@ fun HomeContent(
                         }
                     }
                 }
-                is UiState.Error -> {
-                    item {
-                        Box(
-                            contentAlignment = Alignment.Center,
+            }
+        }
+
+        ongoingOrder.let { data ->
+            when(data){
+                is UiState.Initial -> {}
+                is UiState.Loading -> {}
+                is UiState.Success -> {
+                    val order = data.data
+                    if(order.wasteType?.isNotEmpty() == true && order.wasteQty != null && order.subtotalFee != null){
+                        OrderOngoingCard(
+                            wasteType = order.wasteType,
+                            wasteQty = order.wasteQty,
+                            totalFee = order.subtotalFee,
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(80.dp)
-                        ) {
-                            Text(
-                                text = data.errorMsg,
-                                style = textMediumMedium,
-                                color = Grey
-                            )
-                        }
+                                .padding(16.dp)
+                                .align(Alignment.BottomCenter)
+                                .clickable {
+                                    navigateToDelivery()
+                                }
+                        )
                     }
+                }
+                is UiState.Error -> {
+                    Log.d("HomeScreen", "ongoingOrder: ${data.errorMsg}")
                 }
             }
         }
@@ -527,7 +584,9 @@ fun HomeContentPreview() {
             profile = R.drawable.ic_user_profile_2,
             navigateToDetail = { /*TODO*/ },
             navigateToStatistics = {},
-            onClickOrderCard = {}
+            onClickOrderCard = {},
+            ongoingOrder = UiState.Success(DataDummy.detailOrderResponse[1]),
+            navigateToDelivery = {},
         )
     }
 }

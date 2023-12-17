@@ -1,5 +1,6 @@
 package com.example.bersihkan.ui.components.cards
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -41,6 +42,8 @@ fun CartDetailsCard(
     wasteType: String,
     wasteQty: Int,
     notes: String,
+    wasteDetailsOnClick: () -> Unit,
+    notesOnCLick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -48,8 +51,8 @@ fun CartDetailsCard(
         color = Color.White,
         modifier = modifier
             .fillMaxWidth()
-            .height(340.dp)
-            .clip(Shapes.large)
+            .height(335.dp)
+            .clip(Shapes.medium)
     ){
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -128,6 +131,9 @@ fun CartDetailsCard(
                             )
                         }
                     }
+                },
+                modifier = Modifier.clickable {
+                    wasteDetailsOnClick()
                 }
             )
             CardSection(
@@ -146,7 +152,10 @@ fun CartDetailsCard(
                             .verticalScroll(rememberScrollState())
                     )
                 },
-                showDivider = false
+                showDivider = false,
+                modifier = Modifier.clickable {
+                    notesOnCLick()
+                }
             )
         }
     }
@@ -189,6 +198,8 @@ fun CardSection(
 fun CartDetailsCardPreview() {
     BersihKanTheme {
         CartDetailsCard(
+            wasteDetailsOnClick = {},
+            notesOnCLick = {},
             pickup = "Jl. Ir Juanda No.50",
             wasteType = WasteType.PAPER.type,
             wasteQty = 5,

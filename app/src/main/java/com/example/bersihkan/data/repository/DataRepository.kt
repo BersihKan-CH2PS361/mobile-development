@@ -1,24 +1,35 @@
 package com.example.bersihkan.data.repository
 
 import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.liveData
+import com.example.bersihkan.BuildConfig
 import com.example.bersihkan.data.ResultState
 import com.example.bersihkan.data.local.model.UserModel
 import com.example.bersihkan.data.local.pref.UserPreference
+import com.example.bersihkan.data.remote.request.EditProfileRequest
+import com.example.bersihkan.data.remote.request.LoginRequest
+import com.example.bersihkan.data.remote.request.RegisterRequest
 import com.example.bersihkan.data.remote.response.ContentsResponse
+import com.example.bersihkan.data.remote.response.DetailCollectorResponse
+import com.example.bersihkan.data.remote.response.DetailOrderAll
 import com.example.bersihkan.data.remote.response.DetailOrderResponse
-import com.example.bersihkan.data.remote.response.DetailOrderResponseItem
+import com.example.bersihkan.data.remote.response.DetailUserResponse
 import com.example.bersihkan.data.remote.response.GeneralResponse
 import com.example.bersihkan.data.remote.response.LoginResponse
 import com.example.bersihkan.data.remote.response.RegisterResponse
-import com.example.bersihkan.data.remote.retrofit.ApiConfig
-import com.example.bersihkan.data.remote.retrofit.ApiService
+import com.example.bersihkan.data.remote.retrofit.cc.ApiConfig
+import com.example.bersihkan.data.remote.retrofit.cc.ApiService
+import com.example.bersihkan.data.remote.retrofit.maps.MapsApiConfig
+import com.example.bersihkan.helper.isEmailValid
 import com.example.bersihkan.utils.UserRole
 import com.google.gson.Gson
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import retrofit2.HttpException
 
 class DataRepository private constructor(
@@ -36,7 +47,19 @@ class DataRepository private constructor(
 
     fun getSession(): Flow<UserModel> = userPreference.getSession()
 
-    suspend fun logout() = userPreference.logout()
+    suspend fun logout(): Flow<ResultState<GeneralResponse>> = flow {
+        userPreference.logout()
+        try {
+            val response = apiService.logout()
+            emit(ResultState.Success(response))
+        } catch (e: HttpException) {
+            val jsonInString = e.response()?.errorBody()?.string()
+            val errorBody = Gson().fromJson(jsonInString, RegisterResponse::class.java)
+            val errorMessage = errorBody.message
+            errorMessage?.let { emit(ResultState.Error(it)) }
+            Log.e(TAG, "register: $errorMessage")
+        }
+    }
 
     suspend fun register(
         username: String,
@@ -49,16 +72,17 @@ class DataRepository private constructor(
         Log.d(TAG, "coba Log")
         try {
             Log.d(TAG, "coba Try")
-            val requestBody = mapOf(
-                "username" to username,
-                "email" to email,
-                "password" to password,
-                "password_repeat" to repeatPassword,
-                "phone" to phone,
-                "name" to name
-            )
             Log.d(TAG, "coba sebelum Post")
-            val response = apiService.register(requestBody)
+            val response = apiService.register(
+                RegisterRequest(
+                    username = username,
+                    email = email,
+                    name = name,
+                    phone = phone,
+                    password = password,
+                    passwordRepeat = repeatPassword
+                )
+            )
             Log.d(TAG, "coba sesudah Post")
             Log.d(TAG, "register: $response")
             val message = response.message
@@ -86,15 +110,20 @@ class DataRepository private constructor(
 
     suspend fun login(
         username: String,
-        email: String,
         password: String,
     ): Flow<ResultState<LoginResponse>> = flow {
         try {
-            val requestBody = mapOf(
-                "username" to username,
-                "email" to email,
-                "password" to password,
-            )
+            val requestBody = if(isEmailValid(username)) {
+                LoginRequest(
+                    email = username,
+                    password = password
+                )
+            } else {
+                LoginRequest(
+                    username = username,
+                    password = password
+                )
+            }
             val response = apiService.login(requestBody)
             Log.d(TAG, "login: $response")
             val data = response.user
@@ -126,13 +155,55 @@ class DataRepository private constructor(
         }
     }
 
-    suspend fun getDetailHistory(): Flow<ResultState<List<DetailOrderResponseItem>>> = flow {
+    suspend fun updateProfileUser(
+        name: String,
+        phone: String,
+    ): Flow<ResultState<GeneralResponse>> = flow {
+        try {
+            val user = userPreference.getSession().first()
+            val response = apiService.updateUserProfile(
+                id = user.id,
+                requestBody = EditProfileRequest(
+                    name = name,
+                    phone = phone,
+                    email = user.email
+                )
+            )
+            Log.d(TAG, "coba sesudah Post")
+            Log.d(TAG, "register: $response")
+            val message = response.status
+            Log.d(TAG, "registerMessage: $message")
+            when {
+                message?.contains("Registered") == true -> {
+                    emit(ResultState.Success(response))
+                }
+                message.isNullOrEmpty() -> {
+                    emit(ResultState.Error("Unknown Error"))
+                }
+                else -> {
+                    emit(ResultState.Error(response.status))
+                }
+            }
+        } catch (e: HttpException) {
+            val jsonInString = e.response()?.errorBody()?.string()
+            val errorBody = Gson().fromJson(jsonInString, RegisterResponse::class.java)
+            val errorMessage = errorBody.message
+            errorMessage?.let { emit(ResultState.Error(it)) }
+            Log.e(TAG, "register: $errorMessage")
+        }
+    }
+
+    suspend fun getDetailHistory(): Flow<ResultState<List<DetailOrderResponse>>> = flow {
         val session = userPreference.getSession().first()
         try {
-            val response = apiService.getDetailOrder(session.id)
-            val listHistory = response.detailOrderResponse?.filterNotNull()
-            Log.d(TAG, "getDetailHistory: $response")
-            emit(ResultState.Success(listHistory ?: emptyList()))
+            val response = apiService.getHistoryUser(session.id)
+            val data: List<DetailOrderResponse> = response.map { history ->
+                val collector = apiService.getDetailFacilityByOrderId(history.collectorId.toString())
+                history.copy(facilityName = collector.first().facilityName)
+            }
+            Log.d(TAG, "getDetailHistory: resp = $response")
+            Log.d(TAG, "getDetailHistory: data = $data")
+            emit(ResultState.Success(data))
         } catch (e: HttpException) {
             val jsonInString = e.response()?.errorBody()?.string()
             val errorBody = Gson().fromJson(jsonInString, RegisterResponse::class.java)
@@ -155,8 +226,111 @@ class DataRepository private constructor(
         }
     }
 
+    suspend fun getCurrentOrderUser(): Flow<ResultState<List<DetailOrderResponse>>> = flow {
+        val session = userPreference.getSession().first()
+        try {
+            val response = apiService.getCurrentOrderUser(session.id)
+            Log.d(TAG, "getDetailHistory: $response")
+            emit(ResultState.Success(response))
+        } catch (e: HttpException) {
+            val jsonInString = e.response()?.errorBody()?.string()
+            val errorBody = Gson().fromJson(jsonInString, RegisterResponse::class.java)
+            val errorMessage = errorBody.message
+            errorMessage?.let { emit(ResultState.Error(it)) }
+            Log.e(TAG, "getDetailHistory: $errorMessage")
+        }
+    }
+
+    suspend fun getDetailOrderById(orderId: Int): Flow<ResultState<List<DetailOrderResponse>>> = flow {
+        try {
+            val response = apiService.getDetailOrderById(orderId)
+            Log.d(TAG, "getDetailHistory: $response")
+            emit(ResultState.Success(response))
+        } catch (e: HttpException) {
+            val jsonInString = e.response()?.errorBody()?.string()
+            val errorBody = Gson().fromJson(jsonInString, RegisterResponse::class.java)
+            val errorMessage = errorBody.message
+            errorMessage?.let { emit(ResultState.Error(it)) }
+            Log.e(TAG, "getDetailHistory: $errorMessage")
+        }
+    }
+
+    suspend fun getDetailUserById(): Flow<ResultState<DetailUserResponse>> = flow {
+        val userModel = userPreference.getSession().first()
+        try {
+            val response = apiService.getDetailUserById(userModel.id)
+            Log.d(TAG, "getDetailUserById: $response")
+            emit(ResultState.Success(response))
+        } catch (e: HttpException) {
+            val jsonInString = e.response()?.errorBody()?.string()
+            val errorBody = Gson().fromJson(jsonInString, RegisterResponse::class.java)
+            val errorMessage = errorBody.message
+            errorMessage?.let { emit(ResultState.Error(it)) }
+            Log.e(TAG, "getContents: $errorMessage")
+        }
+    }
+
+    suspend fun getDetailCollectorById(): Flow<ResultState<DetailCollectorResponse>> = flow {
+        val userModel = userPreference.getSession().first()
+        try {
+            val response = apiService.getDetailFacilityByOrderId(userModel.id)
+            Log.d(TAG, "getDetailUserById: $response")
+            emit(ResultState.Success(response.first()))
+        } catch (e: HttpException) {
+            val jsonInString = e.response()?.errorBody()?.string()
+            val errorBody = Gson().fromJson(jsonInString, RegisterResponse::class.java)
+            val errorMessage = errorBody.message
+            errorMessage?.let { emit(ResultState.Error(it)) }
+            Log.e(TAG, "getContents: $errorMessage")
+        }
+    }
+
+    suspend fun getAddressFromLatLng(latitude: Float, longitude: Float): String {
+        val latlng = "$latitude,$longitude"
+        val service = MapsApiConfig.getApiService()
+
+        try {
+            val response = service.reverseGeocode(latlng, MAPS_API_KEY)
+            if (response.status == "OK" && response.results.isNotEmpty()) {
+                return response.results[0].formatted_address
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        return "Address not found"
+    }
+
+    suspend fun getAllDetailOrder(orderId: Int): Flow<ResultState<DetailOrderAll>> = flow {
+
+        try {
+            val detailOrder = apiService.getDetailOrderById(orderId).first()
+
+            val detailCollector = apiService.getDetailFacilityByOrderId(detailOrder.collectorId ?: "").first()
+
+            val lat = detailOrder.pickupLatitude ?: 0f
+            val lon = detailOrder.pickupLongitude ?: 0f
+
+            val location = getAddressFromLatLng(lat, lon)
+
+            val detailOrderAll = DetailOrderAll(detailOrder, detailCollector, location)
+
+            Log.d(TAG, "detailOrderAll: $detailOrderAll")
+
+            emit(ResultState.Success(detailOrderAll))
+        } catch (e: HttpException) {
+            val jsonInString = e.response()?.errorBody()?.string()
+            val errorBody = Gson().fromJson(jsonInString, RegisterResponse::class.java)
+            val errorMessage = errorBody.message
+            errorMessage?.let { emit(ResultState.Error(it)) }
+            Log.e(TAG, "getContents: $errorMessage")
+        }
+
+    }
+
     companion object {
         private const val TAG = "DataRepository"
+        private const val MAPS_API_KEY = "AIzaSyCmxT2On0bOukjMCmwXTTN7O3tbtvR8TlI"
 
         @Volatile
         private var instance: DataRepository? = null

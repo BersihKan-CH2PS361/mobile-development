@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -18,6 +19,7 @@ import com.example.bersihkan.ui.theme.subHeadlineExtraSmall
 @Composable
 fun HomeSection(
     title: String,
+    color: Color = Color.Black,
     content: @Composable () -> Unit,
     isStatistic: Boolean = false,
     navigateToStatistic: () -> Unit,
@@ -27,7 +29,7 @@ fun HomeSection(
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
-            SectionText(title, Modifier.weight(1f).padding(bottom = 10.dp))
+            SectionText(title, color, Modifier.weight(1f).padding(bottom = 10.dp))
             if(isStatistic){
                 Text(
                     text = stringResource(R.string.see_all),

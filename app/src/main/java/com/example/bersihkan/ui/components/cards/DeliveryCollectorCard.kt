@@ -175,7 +175,7 @@ fun DeliveryCollectorCard(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = if(wasteQty > 0) wasteQty.toString() else "0",
+                                text = if(wasteQty > 0) "$wasteQty kg" else "0 kg",
                                 style = textRegularExtraSmall.copy(
                                     color = Color.Black,
                                     textAlign = TextAlign.Start,

@@ -11,6 +11,7 @@ import com.example.bersihkan.data.ResultState
 import com.example.bersihkan.data.remote.response.LoginResponse
 import com.example.bersihkan.data.remote.response.RegisterResponse
 import com.example.bersihkan.data.repository.DataRepository
+import com.example.bersihkan.utils.Event
 import com.example.kekkomiapp.ui.common.UiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,8 +19,8 @@ import kotlinx.coroutines.launch
 
 class LoginViewModel(private val repository: DataRepository) : ViewModel() {
 
-    private var _response: MutableStateFlow<UiState<LoginResponse>> = MutableStateFlow(UiState.Initial)
-    val response: StateFlow<UiState<LoginResponse>> get() = _response
+    private var _response: MutableStateFlow<Event<UiState<LoginResponse>>> = MutableStateFlow(Event(UiState.Initial))
+    val response: StateFlow<Event<UiState<LoginResponse>>> get() = _response
 
     var inputUsername = mutableStateOf("")
     var inputEmail = mutableStateOf("")
@@ -31,24 +32,23 @@ class LoginViewModel(private val repository: DataRepository) : ViewModel() {
     val isEnabled get() = _isEnabled
 
     private fun enableButton() {
-        _isEnabled.value = inputEmail.value != "" && inputUsername.value != "" && inputPassword.value != "" && errorEmail.value == false && errorPassword.value == false
+        _isEnabled.value = inputUsername.value != "" && inputPassword.value != "" && errorPassword.value == false
     }
 
     fun login(){
         viewModelScope.launch {
-            _response.value = UiState.Loading
+            _response.value = Event(UiState.Loading)
             repository.login(
                 username = inputUsername.value,
-                email = inputEmail.value,
                 password = inputPassword.value,
             ).collect{ resultState ->
                 Log.d("LoginViewModel", "$resultState")
                     when(resultState){
                         is ResultState.Success -> {
-                            _response.value = UiState.Success(resultState.data)
+                            _response.value = Event(UiState.Success(resultState.data))
                         }
                         is ResultState.Error -> {
-                            _response.value = UiState.Error(resultState.error)
+                            _response.value = Event(UiState.Error(resultState.error))
                         }
                     }
                 }
@@ -79,6 +79,18 @@ class LoginViewModel(private val repository: DataRepository) : ViewModel() {
     fun setErrorPassword(newInput: Boolean){
         errorPassword.value = newInput
         enableButton()
+    }
+
+    fun onScreenDestroyed() {
+        onCleared()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        setUsername("")
+        setPassword("")
+        setErrorPassword(false)
+        _response.value = Event(UiState.Initial)
     }
 
 }

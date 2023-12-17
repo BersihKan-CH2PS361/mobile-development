@@ -1,5 +1,6 @@
 package com.example.bersihkan.ui.components.textFields
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -67,7 +68,7 @@ fun SelectTypeDropdown(
                 .border(
                     width = 2.dp,
                     color = if (expanded) BlueLagoon else Color.Gray,
-                    shape = MaterialTheme.shapes.medium
+                    shape = Shapes.small
                 )
                 .clickable(interactionSource = interactionSource, indication = null) {
                     expanded = true
@@ -100,6 +101,7 @@ fun SelectTypeDropdown(
                 onDismissRequest = { expanded = false },
                 modifier = Modifier
                     .width(185.dp)
+                    .background(Color.White)
                     .clip(Shapes.medium)
             ) {
                 WasteType.values().filter { it != WasteType.INITIAL }.forEach { wasteType ->

@@ -1,4 +1,4 @@
-package com.example.bersihkan.data.remote.retrofit
+package com.example.bersihkan.data.remote.retrofit.maps
 
 import android.util.Log
 import com.example.bersihkan.BuildConfig
@@ -8,37 +8,29 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-class ApiConfig() {
+class MapsApiConfig() {
 
     companion object {
-        private const val BASE_URL = BuildConfig.BASE_URL
-        fun getApiService(token: String): ApiService {
+        private const val MAPS_URL = BuildConfig.MAPS_URL
+        private const val MAPS_TOKEN = BuildConfig.MAPS_TOKEN
+        fun getApiService(): MapsApiService {
             val loggingInterceptor =
                 if (BuildConfig.DEBUG) {
                     HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)
                 } else {
                     HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.NONE)
                 }
-            val authInterceptor = Interceptor { chain ->
-                val req = chain.request()
-                val requestHeaders = req.newBuilder()
-                    .addHeader("Content-Type", "application/json")
-                    .addHeader("Authorization", "Bearer $token")
-                    .build()
-                chain.proceed(requestHeaders)
-            }
             val client = OkHttpClient.Builder()
                 .addInterceptor(loggingInterceptor)
-                .addInterceptor(authInterceptor)
                 .build()
-            Log.d("ApiConfig", "BASE_URL $BASE_URL")
+            Log.d("ApiConfig", "BASE_URL $MAPS_URL")
             val retrofit = Retrofit.Builder()
-                .baseUrl(BASE_URL)
+                .baseUrl(MAPS_URL)
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(client)
                 .build()
 
-            return retrofit.create(ApiService::class.java)
+            return retrofit.create(MapsApiService::class.java)
         }
     }
 

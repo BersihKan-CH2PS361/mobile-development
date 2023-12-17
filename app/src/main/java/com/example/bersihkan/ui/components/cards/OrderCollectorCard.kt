@@ -50,8 +50,8 @@ fun OrderCollectorCard(
         color = Color.White,
         modifier = modifier
             .fillMaxWidth()
-            .height(422.dp)
-            .clip(Shapes.large)
+            .height(418.dp)
+            .clip(Shapes.medium)
     ){
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -170,7 +170,7 @@ fun OrderCollectorCard(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = if(wasteQty > 0) wasteQty.toString() else "0",
+                                text = if(wasteQty > 0) "$wasteQty kg" else "0 kg",
                                 style = textRegularExtraSmall.copy(
                                     color = Color.Black,
                                     textAlign = TextAlign.Start,

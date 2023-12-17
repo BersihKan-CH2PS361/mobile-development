@@ -29,7 +29,7 @@ fun FunFactsCard(
         contentColor = Color.White,
         modifier = modifier
             .size(250.dp, 128.dp)
-            .clip(Shapes.large)
+            .clip(Shapes.medium)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
