@@ -1,9 +1,7 @@
-package com.example.bersihkan.ui.screen.customer.home
+package com.example.bersihkan.ui.screen.collector.home
 
 import android.util.Log
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bersihkan.data.ResultState
@@ -19,10 +17,9 @@ import com.example.kekkomiapp.ui.common.UiState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
-class HomeViewModel(private val repository: DataRepository) : ViewModel() {
+class HomeCollectorViewModel(private val repository: DataRepository) : ViewModel() {
 
     private val _userModel: MutableStateFlow<UserModel> = MutableStateFlow(
         UserModel(
@@ -42,34 +39,24 @@ class HomeViewModel(private val repository: DataRepository) : ViewModel() {
             UiState.Initial
         )
     val histories: StateFlow<UiState<List<DetailOrderResponse>>> get() = _histories
-    private val _contents: MutableStateFlow<UiState<List<ContentsResponse>>> =
-        MutableStateFlow(UiState.Initial)
-    val contents: StateFlow<UiState<List<ContentsResponse>>> get() = _contents
     private val _ongoingOrder: MutableStateFlow<UiState<DetailOrderResponse>> =
         MutableStateFlow(UiState.Initial)
     val ongoingOrder: StateFlow<UiState<DetailOrderResponse>> get() = _ongoingOrder
-    private val _locationName: MutableStateFlow<String> = MutableStateFlow("")
-    val locationName: StateFlow<String> get() = _locationName
     private val ongoingOrderId: MutableStateFlow<Int> = MutableStateFlow(-1)
     private val _orderStatus: MutableStateFlow<OrderStatus> = MutableStateFlow(OrderStatus.INITIAL)
     val orderStatus: StateFlow<OrderStatus> get() = _orderStatus
     private var _notification: MutableStateFlow<Event<Boolean>> = MutableStateFlow(Event(false))
     val notification: StateFlow<Event<Boolean>> get() = _notification
 
-    var lat = mutableFloatStateOf(-7.7829976f)
-    var lon = mutableFloatStateOf(110.3660218f)
-
     private var isFirstLoadHistory = true
-    private var isFirstLoadContents = true
     private var isFirstLoadOrder = true
 
     fun refreshData() {
         viewModelScope.launch {
             while (true) { // Continuously fetch data
                 // Fetch data here
-                getDetailHistory()
-                getContents()
-                getCurrentOrderUser()
+                getDetailHistoryCollector()
+                getCurrentOrderCollector()
 
                 delay(15000)
             }
@@ -84,10 +71,10 @@ class HomeViewModel(private val repository: DataRepository) : ViewModel() {
         }
     }
 
-    private fun getDetailHistory() {
+    private fun getDetailHistoryCollector() {
         viewModelScope.launch {
             if(isFirstLoadHistory) _histories.value = UiState.Loading
-            repository.getDetailHistory().collect { response ->
+            repository.getDetailHistoryCollector().collect { response ->
                 Log.d("HomeViewModel", "getDetailHistory: $response")
                 when (response) {
                     is ResultState.Success -> {
@@ -104,31 +91,11 @@ class HomeViewModel(private val repository: DataRepository) : ViewModel() {
         }
     }
 
-    private fun getContents() {
-        viewModelScope.launch {
-            if(isFirstLoadContents) _contents.value = UiState.Loading
-            repository.getContents().collect { response ->
-                Log.d("HomeViewModel", "getContents: $response")
-                when (response) {
-                    is ResultState.Success -> {
-                        _contents.value = UiState.Success(response.data)
-                        isFirstLoadContents = false
-                    }
-
-                    is ResultState.Error -> {
-                        _contents.value = UiState.Error(response.error)
-                        isFirstLoadContents = false
-                    }
-                }
-            }
-        }
-    }
-
-    private fun getCurrentOrderUser() {
+    private fun getCurrentOrderCollector() {
         viewModelScope.launch {
             if(isFirstLoadOrder) _ongoingOrder.value = UiState.Loading
-            repository.getCurrentOrderUser().collect { response ->
-                Log.d("HomeViewModel", "getCurrentOrderUser: $response")
+            repository.getCurrentOrderCollector().collect { response ->
+                Log.d("HomeViewModel", "getCurrentOrderCollector: $response")
                 when (response) {
                     is ResultState.Success -> {
                         val order = response.data.first()
@@ -153,13 +120,6 @@ class HomeViewModel(private val repository: DataRepository) : ViewModel() {
                     }
                 }
             }
-        }
-    }
-
-    fun getLocationName() {
-        Log.d("HomeViewModel", "lat: ${lat.value}, lon: ${lon.value}")
-        viewModelScope.launch {
-            _locationName.value = repository.getAddressFromLatLng(lat.value, lon.value)
         }
     }
 

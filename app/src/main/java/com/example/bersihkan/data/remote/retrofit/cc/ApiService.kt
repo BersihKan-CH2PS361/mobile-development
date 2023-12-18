@@ -6,14 +6,13 @@ import com.example.bersihkan.data.remote.request.OrderRequest
 import com.example.bersihkan.data.remote.request.RegisterRequest
 import com.example.bersihkan.data.remote.request.UpdateStatusRequest
 import com.example.bersihkan.data.remote.response.ContentsResponse
+import com.example.bersihkan.data.remote.response.DetailCollectorByIdResponse
 import com.example.bersihkan.data.remote.response.DetailCollectorResponse
 import com.example.bersihkan.data.remote.response.DetailOrderResponse
 import com.example.bersihkan.data.remote.response.DetailUserResponse
 import com.example.bersihkan.data.remote.response.GeneralResponse
 import com.example.bersihkan.data.remote.response.LoginResponse
 import com.example.bersihkan.data.remote.response.RegisterResponse
-import okhttp3.MultipartBody
-import okhttp3.RequestBody
 import retrofit2.http.*
 
 interface ApiService {
@@ -64,11 +63,11 @@ interface ApiService {
         @Path("id") id: Int
     ): List<DetailOrderResponse>
 
-    @PUT(" /orders/update-status/{id}")
+    @PUT("/orders/update-status/{id}")
     suspend fun updateOrderStatus(
-        @Path("id") id: String,
+        @Path("id") id: Int,
         @Body requestBody: UpdateStatusRequest
-    )
+    ): GeneralResponse
 
     @GET("/orders/history-user/{id}")
     suspend fun getHistoryUser(
@@ -94,8 +93,15 @@ interface ApiService {
     suspend fun getContents(): List<ContentsResponse>
 
     @GET("/facility/search-user/{id}")
-    suspend fun getDetailFacilityByOrderId(
+    suspend fun getDetailFacilityByCollectorId(
         @Path("id") id: String
-    ): List<DetailCollectorResponse>
+    ): List<DetailCollectorByIdResponse>
+
+    @GET("/facility/search/{id}")
+    suspend fun getDetailFacilityByFacilityId(
+        @Path("id") id: String
+    ): DetailCollectorResponse
+
+
 
 }

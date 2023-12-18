@@ -1,8 +1,10 @@
 package com.example.bersihkan.data.local
 
 import com.example.bersihkan.data.remote.response.ContentsResponse
+import com.example.bersihkan.data.remote.response.DetailCollectorByIdResponse
 import com.example.bersihkan.data.remote.response.DetailCollectorResponse
 import com.example.bersihkan.data.remote.response.DetailOrderAll
+import com.example.bersihkan.data.remote.response.DetailOrderCollectorAll
 import com.example.bersihkan.data.remote.response.DetailOrderResponse
 import com.example.bersihkan.data.remote.response.DetailUserResponse
 import com.example.bersihkan.data.remote.response.User
@@ -111,20 +113,20 @@ object DataDummy {
     )
 
     // DetailCollectorResponse dummy data
-    val detailCollectorResponse1 = DetailCollectorResponse(
+    val detailCollectorResponse1 = DetailCollectorByIdResponse(
         userId = "98765",
         phone = "9876543210",
-        name = "Alice Smith",
+        collectorName = "Alice Smith",
         facilityId = 2,
         facilityName = "Facility XYZ",
         email = "alice@example.com",
         username = "alicesmith"
     )
 
-    val detailCollectorResponse2 = DetailCollectorResponse(
+    val detailCollectorResponse2 = DetailCollectorByIdResponse(
         userId = "54321",
         phone = "5555555555",
-        name = "Bob Johnson",
+        collectorName = "Bob Johnson",
         facilityId = 3,
         facilityName = "Facility PQR",
         email = "bob@example.com",
@@ -179,6 +181,18 @@ object DataDummy {
         addressFromLatLng = "456 Elm St, City B"
     )
 
+    val detailUserResponse = DetailUserResponse(
+        role = "Role",
+        phone = "1234567890",
+        name = "John Doe",
+        id = "user_id_123",
+        email = "johndoe@example.com",
+        username = "johndoe123"
+    )
 
+    val detailOrderCollectorAll = DetailOrderCollectorAll(
+        detailOrderResponse = detailOrderResponse[1],
+        addressFromLatLng = "123 Main Street, City, Country"
+    )
 
 }

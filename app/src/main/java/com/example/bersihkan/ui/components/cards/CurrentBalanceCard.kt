@@ -22,26 +22,27 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.bersihkan.R
+import com.example.bersihkan.helper.formatToRupiah
 import com.example.bersihkan.ui.components.buttons.OrderNowButton
 import com.example.bersihkan.ui.components.Search
 import com.example.bersihkan.ui.theme.BersihKanTheme
 import com.example.bersihkan.ui.theme.BlueLagoon
 import com.example.bersihkan.ui.theme.Botticelli
 import com.example.bersihkan.ui.theme.gradient2
+import com.example.bersihkan.ui.theme.headlineExtraLarge
 import com.example.bersihkan.ui.theme.headlineExtraSmall
+import com.example.bersihkan.ui.theme.headlineLarge
 import com.example.bersihkan.ui.theme.textMediumLarge
 
 @Composable
-fun OrderNowCard(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    onClick: () -> Unit,
+fun CurrentBalanceCard(
+    currentBalance: Int,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(190.dp)
+            .height(145.dp)
     ){
         Surface(
             color = Color.Transparent,
@@ -55,7 +56,7 @@ fun OrderNowCard(
                         topEnd = 30.dp
                     )
                 )
-                .height(175.dp)
+                .height(145.dp)
         ) {
             Box(
                 modifier = Modifier
@@ -67,25 +68,26 @@ fun OrderNowCard(
                         .padding(20.dp)
                 ) {
                     Text(
-                        text = stringResource(R.string.recycle_today),
+                        text = stringResource(R.string.your_earnings),
                         style = headlineExtraSmall,
                     )
                     Text(
-                        text = stringResource(R.string.waste_to_pick_up),
+                        text = stringResource(R.string.current_balance),
                         style = textMediumLarge,
                     )
-                    Search(
-                        query = query,
-                        onQueryChange = onQueryChange,
+                    Text(
+                        text = formatToRupiah(currentBalance),
+                        style = headlineLarge.copy(
+                            color = Color.White
+                        ),
                     )
+//                    Search(
+//                        query = query,
+//                        onQueryChange = onQueryChange,
+//                    )
                 }
             }
         }
-        OrderNowButton(
-            onClick = onClick,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-        )
         Box(
             modifier = Modifier
                 .size(56.dp)
@@ -115,8 +117,8 @@ fun OrderNowCard(
 
 @Preview(showBackground = true)
 @Composable
-fun OrderNowCardPreview() {
+fun CurrentBalanceCardPreview() {
     BersihKanTheme {
-        OrderNowCard(query = "Jl. Ir. Juanda No.50", onQueryChange = { }, onClick = { })
+        CurrentBalanceCard(2000000)
     }
 }

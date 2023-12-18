@@ -19,8 +19,8 @@ import kotlinx.coroutines.launch
 
 class LoginViewModel(private val repository: DataRepository) : ViewModel() {
 
-    private var _response: MutableStateFlow<Event<UiState<LoginResponse>>> = MutableStateFlow(Event(UiState.Initial))
-    val response: StateFlow<Event<UiState<LoginResponse>>> get() = _response
+    private var _response: MutableStateFlow<UiState<LoginResponse>> = MutableStateFlow(UiState.Initial)
+    val response: StateFlow<UiState<LoginResponse>> get() = _response
 
     var inputUsername = mutableStateOf("")
     var inputEmail = mutableStateOf("")
@@ -37,7 +37,7 @@ class LoginViewModel(private val repository: DataRepository) : ViewModel() {
 
     fun login(){
         viewModelScope.launch {
-            _response.value = Event(UiState.Loading)
+            _response.value = UiState.Loading
             repository.login(
                 username = inputUsername.value,
                 password = inputPassword.value,
@@ -45,10 +45,10 @@ class LoginViewModel(private val repository: DataRepository) : ViewModel() {
                 Log.d("LoginViewModel", "$resultState")
                     when(resultState){
                         is ResultState.Success -> {
-                            _response.value = Event(UiState.Success(resultState.data))
+                            _response.value = UiState.Success(resultState.data)
                         }
                         is ResultState.Error -> {
-                            _response.value = Event(UiState.Error(resultState.error))
+                            _response.value = UiState.Error(resultState.error)
                         }
                     }
                 }
@@ -90,7 +90,7 @@ class LoginViewModel(private val repository: DataRepository) : ViewModel() {
         setUsername("")
         setPassword("")
         setErrorPassword(false)
-        _response.value = Event(UiState.Initial)
+        _response.value = UiState.Initial
     }
 
 }

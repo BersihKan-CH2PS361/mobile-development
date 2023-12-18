@@ -18,6 +18,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.bersihkan.R
+import com.example.bersihkan.helper.formatToRupiah
 import com.example.bersihkan.ui.theme.BersihKanTheme
 import com.example.bersihkan.ui.theme.BonJour
 import com.example.bersihkan.ui.theme.Grey
@@ -51,12 +52,12 @@ fun OrderSummaryCard(
             CardSummarySection(
                 title = stringResource(id = R.string.waste_details),
                 text1 = if(wasteType == "" || wasteQty <= 0) "-  • 0 kg" else "$wasteType  • $wasteQty kg",
-                text2 = "Rp.$wasteFee"
+                text2 = formatToRupiah(wasteFee)
             )
             CardSummarySection(
                 title = stringResource(R.string.delivery_title),
                 text1 = stringResource(R.string.delivery_fee),
-                text2 = "Rp.12000"
+                text2 = formatToRupiah(12000)
             )
             Divider(
                 thickness = 1.dp,
@@ -76,7 +77,7 @@ fun OrderSummaryCard(
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    text = "Rp.${wasteFee.plus(12000)}",
+                    text = formatToRupiah(wasteFee.plus(12000)),
                     style = subHeadlineLarge.copy(
                         color = Color.Black
                     )

@@ -12,8 +12,22 @@ sealed class Screen(val route: String){
     }
     object Profile: Screen("profile")
     object EditProfile: Screen("editProfile")
-    object Order: Screen("order")
-    object Delivery: Screen("delivery")
+    object Order: Screen("order/{lat}/{lon}"){
+        fun createRoute(lat: Float, lon: Float) = "order/$lat/$lon"
+    }
+    object Delivery: Screen("delivery/{orderId}"){
+        fun createRoute(orderId: Int) = "delivery/$orderId"
+    }
     object Statistics: Screen("statistics")
     object About: Screen("about")
+    object HomeCollector: Screen("home-collector")
+    object HistoryCollector: Screen("history-collector")
+    object DetailHistoryCollector: Screen("detailHistory-collector/{orderId}"){
+        fun createRoute(orderId: Int) = "detailHistory-collector/$orderId"
+    }
+    object ProfileCollector: Screen("profile-collector")
+    object EditProfileCollector: Screen("editProfile-collector")
+    object DeliveryCollector: Screen("delivery-collector/{orderId}"){
+        fun createRoute(orderId: Int) = "delivery-collector/$orderId"
+    }
 }
