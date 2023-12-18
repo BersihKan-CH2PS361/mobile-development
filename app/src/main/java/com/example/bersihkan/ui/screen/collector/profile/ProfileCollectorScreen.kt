@@ -1,4 +1,4 @@
-package com.example.bersihkan.ui.screen.customer.profile
+package com.example.bersihkan.ui.screen.collector.profile
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -25,8 +25,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Alignment.Companion.BottomCenter
-import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -37,45 +35,42 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
 import com.example.bersihkan.R
 import com.example.bersihkan.data.di.Injection
 import com.example.bersihkan.data.local.DataDummy
-import com.example.bersihkan.data.remote.response.User
+import com.example.bersihkan.data.remote.response.DetailCollectorResponse
+import com.example.bersihkan.data.remote.response.DetailUserResponse
+import com.example.bersihkan.data.repository.DataRepository
 import com.example.bersihkan.ui.components.cards.ProfileCard
+import com.example.bersihkan.ui.components.modal.ConfirmDialog
 import com.example.bersihkan.ui.screen.ViewModelFactory
+import com.example.bersihkan.ui.screen.customer.profile.ProfileContent
 import com.example.bersihkan.ui.theme.BersihKanTheme
 import com.example.bersihkan.ui.theme.Grey
 import com.example.bersihkan.ui.theme.Java
 import com.example.bersihkan.ui.theme.PacificBlue
+import com.example.bersihkan.ui.theme.Red
 import com.example.bersihkan.ui.theme.Shapes
 import com.example.bersihkan.ui.theme.gradient1
 import com.example.bersihkan.ui.theme.headlineExtraSmall
 import com.example.bersihkan.ui.theme.headlineSmall
 import com.example.bersihkan.ui.theme.textMediumMedium
 import com.example.bersihkan.ui.theme.textMediumSmall
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.bersihkan.data.remote.response.DetailUserResponse
-import com.example.bersihkan.ui.components.modal.ConfirmDialog
-import com.example.bersihkan.ui.theme.Red
 import com.example.kekkomiapp.ui.common.UiState
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.bersihkan.data.remote.response.DetailCollectorByIdResponse
 
 @Composable
-fun ProfileScreen(
+fun ProfileCollectorScreen(
     navigateToEditProfile: () -> Unit,
     navigateToAbout: () -> Unit,
     navigateToLogout: () -> Unit,
-    viewModel: ProfileViewModel = viewModel(
+    viewModel: ProfileCollectorViewModel = viewModel(
         factory = ViewModelFactory(Injection.provideRepository(LocalContext.current))
     ),
     modifier: Modifier = Modifier
 ) {
-
-//    Box(
-//        modifier = modifier.fillMaxSize(),
-//        contentAlignment = Alignment.Center,
-//    ) {
-//        Text("This is a Profile Screen")
-//    }
 
     viewModel.getSession()
     LaunchedEffect(key1 = viewModel, block = {
@@ -88,7 +83,7 @@ fun ProfileScreen(
             is UiState.Loading -> {
                 Box(
                     contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = modifier.fillMaxSize()
                 ) {
                     CircularProgressIndicator(
                         color = Grey,
@@ -99,24 +94,28 @@ fun ProfileScreen(
                 }
             }
             is UiState.Success -> {
-                ProfileContent(
+                ProfileCollectorContent(
                     user = userData.data,
                     navigateToEditProfile = navigateToEditProfile,
                     navigateToAbout = navigateToAbout,
                     navigateToLogout = {
                         viewModel.logout()
                         navigateToLogout()
-                    })
+                    },
+                    modifier = modifier
+                )
             }
             is UiState.Error -> {
-                ProfileContent(
-                    user = DetailUserResponse(),
+                ProfileCollectorContent(
+                    user = DetailCollectorByIdResponse(),
                     navigateToEditProfile = { },
                     navigateToAbout = navigateToAbout,
                     navigateToLogout = {
                         viewModel.logout()
                         navigateToLogout()
-                    })
+                    },
+                    modifier = modifier
+                )
             }
         }
     }
@@ -153,8 +152,8 @@ fun ProfileScreen(
 }
 
 @Composable
-fun ProfileContent(
-    user: DetailUserResponse,
+fun ProfileCollectorContent(
+    user: DetailCollectorByIdResponse,
     isError: Boolean = false,
     textError: String = "",
     navigateToEditProfile: () -> Unit,
@@ -187,7 +186,7 @@ fun ProfileContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(590.dp)
-                .align(BottomCenter)
+                .align(Alignment.BottomCenter)
         ) {
         }
         if(isError){
@@ -201,7 +200,7 @@ fun ProfileContent(
                     text = textError,
                     style = textMediumMedium,
                     color = Grey,
-                    modifier = Modifier.align(BottomCenter)
+                    modifier = Modifier.align(Alignment.BottomCenter)
                 )
             }
         } else {
@@ -230,14 +229,18 @@ fun ProfileContent(
                         .fillMaxWidth()
                 ) {
                     Text(
-                        text = user.name.toString(),
+                        text = user.collectorName.toString(),
                         style = headlineSmall.copy(
                             color = Color.Black,
                             textAlign = TextAlign.Center
                         )
                     )
                     Text(
-                        text = user.email.toString(),
+                        text = stringResource(
+                            R.string.collector_profile,
+                            user.email.toString(),
+                            user.facilityName.toString()
+                        ),
                         style = textMediumSmall.copy(
                             color = Grey,
                             textAlign = TextAlign.Center
@@ -279,7 +282,7 @@ fun ProfileContent(
                     ),
                     modifier = Modifier
                         .padding(top = 30.dp)
-                        .align(CenterHorizontally)
+                        .align(Alignment.CenterHorizontally)
                         .clickable {
                             isDialogShowed = false
                         }
@@ -287,19 +290,17 @@ fun ProfileContent(
             }
         }
     }
-
+    
 }
 
 @Preview(showSystemUi = true)
 @Composable
-fun ProfileContentPreview() {
+fun ProfileCollectorContentPreview() {
     BersihKanTheme {
-        ProfileContent(
-            user = DataDummy.user,
-            isError = false,
-            textError = stringResource(id = R.string.no_data_found),
-            navigateToEditProfile = {  },
-            navigateToAbout = {  },
-            navigateToLogout = {  })
+        ProfileCollectorContent(
+            user = DetailCollectorByIdResponse(),
+            navigateToEditProfile = { /*TODO*/ },
+            navigateToAbout = { /*TODO*/ },
+            navigateToLogout = { /*TODO*/ })
     }
 }

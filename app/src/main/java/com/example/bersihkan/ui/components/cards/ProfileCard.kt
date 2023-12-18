@@ -40,7 +40,7 @@ fun ProfileCard(
         contentColor = Color.White,
         modifier = modifier
             .fillMaxWidth()
-            .height(80.dp)
+            .height(90.dp)
             .clip(Shapes.medium)
     ){
         Row(

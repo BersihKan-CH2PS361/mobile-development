@@ -51,7 +51,6 @@ fun CartDetailsCard(
         color = Color.White,
         modifier = modifier
             .fillMaxWidth()
-            .height(335.dp)
             .clip(Shapes.medium)
     ){
         Column(
@@ -149,6 +148,7 @@ fun CartDetailsCard(
                         overflow = TextOverflow.Visible,
                         modifier = Modifier
                             .padding(bottom = 5.dp)
+                            .height(95.dp)
                             .verticalScroll(rememberScrollState())
                     )
                 },

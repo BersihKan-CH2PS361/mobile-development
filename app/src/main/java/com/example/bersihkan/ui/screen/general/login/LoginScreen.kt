@@ -14,6 +14,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,7 +51,7 @@ import com.example.kekkomiapp.ui.common.UiState
 @Composable
 fun LoginScreen(
     navigateToHomeCustomer: () -> Unit,
-    navigateToHomeCollector: ()-> Unit,
+    navigateToHomeCollector: () -> Unit,
     navigateToRegister: () -> Unit,
     viewModel: LoginViewModel = viewModel(
         factory = ViewModelFactory(Injection.provideRepository(LocalContext.current))
@@ -64,6 +65,10 @@ fun LoginScreen(
     val inputPassword = viewModel.inputPassword.value
     val errorPassword = viewModel.errorPassword.value
     val isEnabled = viewModel.isEnabled.collectAsState().value
+
+    var showDialog by remember {
+        mutableStateOf(false)
+    }
 
     LoginContent(
         inputUsername = inputUsername,
@@ -87,49 +92,54 @@ fun LoginScreen(
         isEnable = isEnabled
     )
 
-    viewModel.response.collectAsState().value.let { data ->
-        var showDialog by remember {
-            mutableStateOf(true)
-        }
-        data.getContentIfNotHandled().let { response ->
-            when(response){
-                is UiState.Initial -> {}
-                is UiState.Loading -> {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        CircularProgressIndicator(
-                            color = Grey,
-                            modifier = Modifier
-                                .size(50.dp)
-                                .align(Alignment.Center)
-                        )
-                    }
+    val response by viewModel.response.collectAsState()
+
+    LaunchedEffect(response) {
+        when (response) {
+            is UiState.Success -> {
+                val data = (response as UiState.Success).data
+                val role = data.user?.role
+                showDialog = true
+                // Show the dialog based on role or any other conditions
+                if (role == UserRole.USER.role) {
+                    navigateToHomeCustomer()
+                } else {
+                    navigateToHomeCollector()
                 }
-                is UiState.Success -> {
-                    val data = response.data
-                    val role = data.user?.role
-                    RegisterLoginDialog(
-                        title = stringResource(R.string.welcome_back),
-                        message = stringResource(R.string.login_success),
-                        onDismiss = {
-                            showDialog = false
-                            if(role == UserRole.USER.role) navigateToHomeCustomer() else navigateToHomeCollector()
-                        }
-                    )
-                }
-                is UiState.Error -> {
-                    if(showDialog){
-                        RegisterLoginDialog(
-                            title = stringResource(R.string.error),
-                            message = response.errorMsg,
-                            onDismiss = { showDialog = false }
-                        )
-                    }
-                }
-                else -> {}
             }
+            is UiState.Error -> {
+                showDialog = true
+            }
+            else -> {}
+        }
+    }
+
+    if (showDialog) {
+        when (response) {
+            is UiState.Success -> {
+                val data = (response as UiState.Success).data
+                val role = data.user?.role
+                RegisterLoginDialog(
+                    title = stringResource(R.string.welcome_back),
+                    message = stringResource(R.string.login_success),
+                    onDismiss = {
+                        showDialog = false
+                        if (role == UserRole.USER.role) {
+                            navigateToHomeCustomer()
+                        } else {
+                            navigateToHomeCollector()
+                        }
+                    }
+                )
+            }
+            is UiState.Error -> {
+                RegisterLoginDialog(
+                    title = stringResource(R.string.error),
+                    message = (response as UiState.Error).errorMsg,
+                    onDismiss = { showDialog = false }
+                )
+            }
+            else -> {}
         }
     }
 
@@ -149,7 +159,7 @@ fun LoginContent(
     loginOnClick: () -> Unit,
     isEnable: Boolean,
     modifier: Modifier = Modifier
-){
+) {
 
     LazyColumn(
         modifier = modifier

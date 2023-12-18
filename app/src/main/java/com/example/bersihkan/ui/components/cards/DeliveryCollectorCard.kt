@@ -55,7 +55,7 @@ fun DeliveryCollectorCard(
         color = Color.White,
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(550.dp)
+            .heightIn(400.dp)
             .clip(Shapes.large)
     ){
         Column(
@@ -199,7 +199,6 @@ fun DeliveryCollectorCard(
                         modifier = Modifier
                             .padding(bottom = 5.dp)
                             .fillMaxWidth()
-                            .verticalScroll(rememberScrollState())
                     )
                 },
             )

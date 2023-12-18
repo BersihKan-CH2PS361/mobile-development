@@ -51,7 +51,7 @@ data class EditProfileRequest(
 data class OrderRequest(
 
     @field:SerializedName("facilityId")
-    val facilityId: Int,
+    val facilityId: String,
 
     @field:SerializedName("pickup_fee")
     val pickupFee: Int,

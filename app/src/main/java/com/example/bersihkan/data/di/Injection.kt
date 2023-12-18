@@ -18,7 +18,7 @@ object Injection {
         Log.d("Injection", "session: $session")
         Log.d("Injection", "session token: $token")
         val apiService = ApiConfig.getApiService(token)
-        return DataRepository.getInstance(pref, apiService)
+        return DataRepository.getInstance(pref, apiService, context)
     }
 
 }

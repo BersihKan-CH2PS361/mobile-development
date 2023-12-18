@@ -1,6 +1,15 @@
 package com.example.bersihkan.ui.screen.customer.home
 
+import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,6 +32,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -39,6 +49,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.work.Data
+import androidx.work.OneTimeWorkRequest
+import androidx.work.WorkManager
 import com.example.bersihkan.R
 import com.example.bersihkan.data.di.Injection
 import com.example.bersihkan.data.local.DataDummy
@@ -63,53 +78,131 @@ import com.example.bersihkan.ui.theme.textRegularExtraLarge
 import com.example.bersihkan.utils.Statistics
 import com.example.bersihkan.helper.calculateStatisticsTotals
 import com.example.bersihkan.helper.convertToDate
+import com.example.bersihkan.notification.NotificationWorker
 import com.example.bersihkan.ui.components.cards.OrderOngoingCard
+import com.example.bersihkan.utils.Event
 import com.example.bersihkan.utils.UserRole
 import com.example.kekkomiapp.ui.common.UiState
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 
 @Composable
 fun HomeScreen(
     navigateToHomeCustomer: () -> Unit,
-    navigateToHomeCollector: ()-> Unit,
+    navigateToHomeCollector: () -> Unit,
+    navigateToStatistics: () -> Unit,
+    navigateToDetail: (Int) -> Unit,
+    navigateToDelivery: (Int) -> Unit,
+    navigateToOrder: (Float, Float) -> Unit,
     navigateToWelcomePage1: () -> Unit,
     viewModel: HomeViewModel = viewModel(
         factory = ViewModelFactory(Injection.provideRepository(LocalContext.current))
     ),
+    workManager: WorkManager = WorkManager.getInstance(LocalContext.current),
     modifier: Modifier = Modifier
 ) {
 
     viewModel.getSession()
+    LaunchedEffect(key1 = viewModel) {
+        viewModel.refreshData()
+    }
 
     viewModel.userModel.collectAsState().value.let { userModel ->
-        if(!userModel.isLogin){
+        if (!userModel.isLogin) {
             navigateToWelcomePage1()
         }
+        if(userModel.role == UserRole.COLLECTOR){
+            navigateToHomeCollector()
+        }
     }
-    LaunchedEffect(key1 = viewModel, block = {
-        viewModel.refreshData()
-    })
+
+    val context = LocalContext.current
+
+    val fusedLocationClient: FusedLocationProviderClient = remember(context) {
+        LocationServices.getFusedLocationProviderClient(context)
+    }
+
+    val isPermissionGranted = ContextCompat.checkSelfPermission(
+        context, Manifest.permission.ACCESS_FINE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+
+    val isPermissionNotificationGranted = ContextCompat.checkSelfPermission(
+        context, Manifest.permission.POST_NOTIFICATIONS
+    ) == PackageManager.PERMISSION_GRANTED
+
+    val requestPermissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+            if (isGranted) {
+//                getLocation(fusedLocationClient, context) { lat, lon ->
+//                    viewModel.lat.floatValue = lat.toFloat()
+//                    viewModel.lon.floatValue = lon.toFloat()
+//                }
+            } else {
+                Toast.makeText(context, "Permission denied.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+    if (isPermissionNotificationGranted) {
+
+    } else {
+        DisposableEffect(Unit) {
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+            onDispose { }
+        }
+    }
+
+    if (isPermissionGranted) {
+//        getLocation(fusedLocationClient, context) { lat, lon ->
+//            viewModel.lat.floatValue = lat.toFloat()
+//            viewModel.lon.floatValue = lon.toFloat()
+//        }
+        viewModel.getLocationName()
+    } else {
+        DisposableEffect(Unit) {
+            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            onDispose { }
+        }
+    }
 
     val user = viewModel.userModel.collectAsState().value
 
     val histories = viewModel.histories.collectAsState(initial = UiState.Loading).value
     val contents = viewModel.contents.collectAsState(initial = UiState.Loading).value
     val ongoingOrder = viewModel.ongoingOrder.collectAsState(initial = UiState.Loading).value
+    val locationName = viewModel.locationName.collectAsState().value
 
-    var isRefreshing by remember { mutableStateOf(false) }
+    viewModel.notification.collectAsState().value.let {  notification ->
+        notification.getContentIfNotHandled().let { isShowed ->
+            if(isShowed == true){
+                val dataNotif = Data.Builder()
+                    .putString(NotificationWorker.EXTRA_USER, UserRole.USER.role)
+                    .putString(NotificationWorker.EXTRA_STATUS, viewModel.orderStatus.value.status)
+                    .build()
+                val oneTimeWorkRequest = OneTimeWorkRequest.Builder(NotificationWorker::class.java)
+                    .setInputData(dataNotif)
+                    .build()
+                workManager.enqueue(oneTimeWorkRequest)
+            }
+        }
+    }
 
     HomeContent(
-        query = "",
+        query = locationName,
         onQueryChange = {},
-        onClickOrderCard = { /*TODO*/ },
+        onClickOrderCard = {
+            navigateToOrder(viewModel.lat.value, viewModel.lon.value)
+        },
         histories = histories,
         contents = contents,
-        navigateToDetail = { /*TODO*/ },
+        navigateToDetail = navigateToDetail,
         name = user.name,
         profile = if (user.role == UserRole.USER) R.drawable.ic_user_profile_2 else R.drawable.ic_collector_profile,
-        navigateToStatistics = { /*TODO*/ },
+        navigateToStatistics = navigateToStatistics,
         ongoingOrder = ongoingOrder,
-        navigateToDelivery = {},
-        modifier = modifier
+        navigateToDelivery = navigateToDelivery,
+        modifier = modifier,
     )
 
 //    Box(
@@ -129,11 +222,11 @@ fun HomeContent(
     histories: UiState<List<DetailOrderResponse>>,
     contents: UiState<List<ContentsResponse>>,
     ongoingOrder: UiState<DetailOrderResponse>,
-    navigateToDetail: () -> Unit,
     name: String,
     profile: Int,
     navigateToStatistics: () -> Unit,
-    navigateToDelivery: () -> Unit,
+    navigateToDetail: (Int) -> Unit,
+    navigateToDelivery: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -161,10 +254,11 @@ fun HomeContent(
             }
             item {
                 histories.let { data ->
-                    when(data){
+                    when (data) {
                         is UiState.Initial -> {
 
                         }
+
                         is UiState.Loading -> {
                             HomeSection(
                                 title = stringResource(R.string.statistics),
@@ -188,12 +282,14 @@ fun HomeContent(
                                 modifier = Modifier.padding(top = 90.dp, start = 20.dp)
                             )
                         }
+
                         is UiState.Success -> {
-                            val statistics = calculateStatisticsTotals(data.data, LocalContext.current)
+                            val statistics =
+                                calculateStatisticsTotals(data.data, LocalContext.current)
                             HomeSection(
                                 title = stringResource(R.string.statistics),
                                 content = {
-                                    if (statistics.isNotEmpty()){
+                                    if (statistics.isNotEmpty()) {
                                         StatisticCardRow(
                                             statistics = statistics,
                                         )
@@ -217,6 +313,7 @@ fun HomeContent(
                                 modifier = Modifier.padding(top = 90.dp, start = 20.dp)
                             )
                         }
+
                         is UiState.Error -> {
                             HomeSection(
                                 title = stringResource(R.string.statistics),
@@ -239,12 +336,13 @@ fun HomeContent(
                                 modifier = Modifier.padding(top = 90.dp, start = 20.dp)
                             )
                         }
+                        else -> {}
                     }
                 }
             }
             item {
                 contents.let { data ->
-                    when(data){
+                    when (data) {
                         is UiState.Initial -> {}
                         is UiState.Loading -> {
                             HomeSection(
@@ -269,12 +367,13 @@ fun HomeContent(
                                     .padding(top = 30.dp, start = 20.dp)
                             )
                         }
+
                         is UiState.Success -> {
                             val contents = data.data
                             HomeSection(
                                 title = stringResource(R.string.fun_facts),
                                 content = {
-                                    if (contents.isNotEmpty()){
+                                    if (contents.isNotEmpty()) {
                                         FunFactsCardRow(contents = contents)
                                     } else {
                                         Box(
@@ -296,6 +395,7 @@ fun HomeContent(
                                     .padding(top = 30.dp, start = 20.dp)
                             )
                         }
+
                         is UiState.Error -> {
                             HomeSection(
                                 title = stringResource(R.string.fun_facts),
@@ -318,6 +418,7 @@ fun HomeContent(
                                     .padding(top = 30.dp, start = 20.dp)
                             )
                         }
+                        else -> {}
                     }
                 }
             }
@@ -329,7 +430,7 @@ fun HomeContent(
                 )
             }
             histories.let { data ->
-                when(data){
+                when (data) {
                     is UiState.Initial -> {}
                     is UiState.Loading -> {
                         item {
@@ -348,19 +449,12 @@ fun HomeContent(
                             }
                         }
                     }
+
                     is UiState.Success -> {
                         val hist = data.data
-                        if(hist.isNotEmpty()){
-                            items(hist, key = { it.orderId!! }){ history ->
-                                if(history == hist.last()){
-                                    RecentTransactionsCard(
-                                        date = convertToDate(history.orderDatetime ?: "").toString(),
-                                        address = history.pickupDatetime ?: "",
-                                        type = history.wasteType ?: "",
-                                        weight = history.wasteQty.toString(),
-                                        modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 30.dp)
-                                    )
-                                } else {
+                        if (hist.isNotEmpty()) {
+                            items(hist, key = { it.orderId!! }) { history ->
+                                if (history == hist.last()) {
                                     RecentTransactionsCard(
                                         date = convertToDate(
                                             history.orderDatetime ?: ""
@@ -368,10 +462,29 @@ fun HomeContent(
                                         address = history.pickupDatetime ?: "",
                                         type = history.wasteType ?: "",
                                         weight = history.wasteQty.toString(),
-                                        modifier = Modifier.padding(
-                                            horizontal = 20.dp,
-                                            vertical = 10.dp
-                                        )
+                                        modifier = Modifier
+                                            .padding(
+                                                start = 20.dp,
+                                                end = 20.dp,
+                                                top = 10.dp,
+                                                bottom = 30.dp
+                                            )
+                                            .clickable { navigateToDetail(history.orderId ?: 0) }
+                                    )
+                                } else {
+                                    RecentTransactionsCard(
+                                        date = convertToDate(
+                                            history.orderDatetime ?: ""
+                                        ),
+                                        address = history.facilityName.toString(),
+                                        type = history.wasteType ?: "",
+                                        weight = history.wasteQty.toString(),
+                                        modifier = Modifier
+                                            .padding(
+                                                horizontal = 20.dp,
+                                                vertical = 10.dp
+                                            )
+                                            .clickable { navigateToDetail(history.orderId ?: 0) }
                                     )
                                 }
                             }
@@ -392,6 +505,7 @@ fun HomeContent(
                             }
                         }
                     }
+
                     is UiState.Error -> {
                         item {
                             Box(
@@ -408,17 +522,19 @@ fun HomeContent(
                             }
                         }
                     }
+                    else -> {}
                 }
             }
         }
 
         ongoingOrder.let { data ->
-            when(data){
+            when (data) {
                 is UiState.Initial -> {}
                 is UiState.Loading -> {}
                 is UiState.Success -> {
+
                     val order = data.data
-                    if(order.wasteType?.isNotEmpty() == true && order.wasteQty != null && order.subtotalFee != null){
+                    if (order.wasteType?.isNotEmpty() == true && order.wasteQty != null && order.subtotalFee != null) {
                         OrderOngoingCard(
                             wasteType = order.wasteType,
                             wasteQty = order.wasteQty,
@@ -427,14 +543,16 @@ fun HomeContent(
                                 .padding(16.dp)
                                 .align(Alignment.BottomCenter)
                                 .clickable {
-                                    navigateToDelivery()
+                                    navigateToDelivery(order.orderId ?: 0)
                                 }
                         )
                     }
                 }
+
                 is UiState.Error -> {
                     Log.d("HomeScreen", "ongoingOrder: ${data.errorMsg}")
                 }
+                else -> {}
             }
         }
     }
@@ -508,26 +626,18 @@ fun StatisticCardRow(
         modifier = modifier,
         state = rememberLazyListState(),
         content = {
-            item {
+            items(statistics, key = { it.desc }) { statistic ->
                 StatisticsCard(
-                    count = statistics[0].qty.toString(),
-                    title = statistics[0].item,
-                    desc = statistics[0].desc,
-                    backgroundColor = Java)
-            }
-            item {
-                StatisticsCard(
-                    count = statistics[1].qty.toString(),
-                    title = statistics[1].item,
-                    desc = statistics[1].desc,
-                    backgroundColor = Cerulean)
-            }
-            item {
-                StatisticsCard(
-                    count = statistics[2].qty.toString(),
-                    title = statistics[2].item,
-                    desc = statistics[2].desc,
-                    backgroundColor = PacificBlue,
+                    count = statistic.qty.toString(),
+                    title = statistic.item,
+                    desc = statistic.desc,
+                    backgroundColor = when (statistics.indexOf(statistic)) {
+                        0 -> Java
+                        1 -> Cerulean
+                        2 -> PacificBlue
+                        // Add more colors or logic as needed for different indices
+                        else -> Color.Gray // Fallback color for additional items
+                    },
                     modifier = Modifier.padding(end = 20.dp)
                 )
             }
@@ -544,11 +654,13 @@ fun FunFactsCardRow(
         modifier = modifier,
         state = rememberLazyListState(),
         content = {
-            items(contents, key = { it.id!! }){ content ->
+            items(contents, key = { it.id!! }) { content ->
                 FunFactsCard(
                     title = content.contentTitle ?: "No Title",
                     desc = content.contentText ?: "No description",
-                    modifier = if(contents.indexOf(content) == contents.lastIndex) Modifier.padding(end = 20.dp) else Modifier
+                    modifier = if (contents.indexOf(content) == contents.lastIndex) Modifier.padding(
+                        end = 20.dp
+                    ) else Modifier
                 )
             }
         })
@@ -590,4 +702,38 @@ fun HomeContentPreview() {
             navigateToDelivery = {},
         )
     }
+}
+
+fun getLocation(
+    fusedLocationClient: FusedLocationProviderClient,
+    context: Context,
+    onLocationResult: (Double, Double) -> Unit
+) {
+
+    if (ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+    ) {
+        fusedLocationClient.lastLocation
+            .addOnSuccessListener { location: android.location.Location? ->
+                Log.d("HomeScreen", "getLocation: $location")
+                if (location != null) {
+                    val latitude = location.latitude
+                    val longitude = location.longitude
+                    Log.d("HomeScreen", "getLocation: lat=$latitude, lon=$longitude")
+                    onLocationResult(latitude, longitude)
+                } else {
+                    Toast.makeText(
+                        context,
+                        "Location is not found. Try again",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+
+            }
+    } else {
+        Toast.makeText(context, "Permission denied.", Toast.LENGTH_SHORT).show()
+    }
+
 }

@@ -7,7 +7,9 @@ import com.example.bersihkan.data.remote.retrofit.maps.MapsApiConfig
 import com.example.bersihkan.utils.OrderStatus
 import com.example.bersihkan.utils.Statistics
 import com.example.bersihkan.utils.WasteType
+import java.text.NumberFormat
 import java.text.SimpleDateFormat
+import java.util.Currency
 import java.util.Locale
 
 fun convertToDate(dateString: String): String {
@@ -92,4 +94,18 @@ fun calculateTotalWasteByType(detailOrderResponse: List<DetailOrderResponse>): L
         .map { (wasteType, orders) ->
             WasteTypeTotal(findWasteType(wasteType.toString()), orders.sumOf { it.wasteQty ?: 0 })
         }
+}
+
+fun formatToRupiah(value: Int): String {
+    val locale = Locale("id", "ID")
+    val format = NumberFormat.getCurrencyInstance(locale)
+
+    try {
+        val currency = Currency.getInstance("IDR")
+        format.currency = currency
+    } catch (e: IllegalArgumentException) {
+        e.printStackTrace()
+    }
+
+    return format.format(value)
 }

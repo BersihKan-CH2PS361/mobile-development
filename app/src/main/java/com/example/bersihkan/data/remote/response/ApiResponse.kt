@@ -93,11 +93,20 @@ data class DetailOrderResponse(
 	@field:SerializedName("pickup_fee")
 	val pickupFee: Int? = null,
 
+	@field:SerializedName("pickup_location")
+	val pickupLocation: String? = null,
+
 	@field:SerializedName("pickup_longitude")
 	val pickupLongitude: Float? = null,
 
 	@field:SerializedName("user_notes")
 	val userNotes: String? = null,
+
+	@field:SerializedName("user_name")
+	val userName: String? = null,
+
+	@field:SerializedName("user_phone")
+	val userPhone: String? = null,
 
 	@field:SerializedName("subtotal_fee")
 	val subtotalFee: Int? = null,
@@ -173,11 +182,42 @@ data class DetailCollectorResponse(
 	val username: String? = null
 )
 
+data class DetailCollectorByIdResponse(
+
+	@field:SerializedName("user_id")
+	val userId: String? = null,
+
+	@field:SerializedName("phone")
+	val phone: String? = null,
+
+	@field:SerializedName("collector_name")
+	val collectorName: String? = null,
+
+	@field:SerializedName("facility_id")
+	val facilityId: Int? = null,
+
+	@field:SerializedName("facility_name")
+	val facilityName: String? = null,
+
+	@field:SerializedName("email")
+	val email: String? = null,
+
+	@field:SerializedName("username")
+	val username: String? = null
+)
+
 data class DetailOrderAll(
 
 	var detailOrderResponse: DetailOrderResponse? = null,
 
-	var detailCollectorResponse: DetailCollectorResponse? = null,
+	var detailCollectorResponse: DetailCollectorByIdResponse? = null,
+
+	var addressFromLatLng: String? = null
+)
+
+data class DetailOrderCollectorAll(
+
+	var detailOrderResponse: DetailOrderResponse? = null,
 
 	var addressFromLatLng: String? = null
 )

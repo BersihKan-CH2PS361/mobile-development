@@ -6,9 +6,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
@@ -21,6 +24,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,12 +33,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bersihkan.R
+import com.example.bersihkan.data.di.Injection
 import com.example.bersihkan.helper.findWasteType
 import com.example.bersihkan.ui.components.buttons.LargeButton
 import com.example.bersihkan.ui.components.buttons.SmallButton
@@ -45,6 +52,7 @@ import com.example.bersihkan.ui.components.textFields.NotesInput
 import com.example.bersihkan.ui.components.textFields.QuantityInput
 import com.example.bersihkan.ui.components.textFields.SelectTypeDropdown
 import com.example.bersihkan.ui.components.topBar.TopBar
+import com.example.bersihkan.ui.screen.ViewModelFactory
 import com.example.bersihkan.ui.theme.BersihKanTheme
 import com.example.bersihkan.ui.theme.BlueLagoon
 import com.example.bersihkan.ui.theme.Cerulean
@@ -54,15 +62,61 @@ import com.example.bersihkan.ui.theme.gradient2
 import com.example.bersihkan.ui.theme.headlineExtraSmall
 import com.example.bersihkan.ui.theme.subHeadlineSmall
 import com.example.bersihkan.utils.WasteType
+import com.example.kekkomiapp.ui.common.UiState
 
 @Composable
 fun OrderScreen(
-    navigateToDelivery: () -> Unit,
+    lat: Float,
+    lon: Float,
+    navigateToDelivery: (Int) -> Unit,
     navigateToBack: () -> Unit,
+    viewModel: OrderViewModel = viewModel(
+        factory = ViewModelFactory(Injection.provideRepository(LocalContext.current))
+    ),
     modifier: Modifier = Modifier
 ) {
 
+    viewModel.lat.floatValue = lat
+    viewModel.lon.floatValue = lon
 
+    val locationName = viewModel.locationName.collectAsState().value
+
+    LaunchedEffect(key1 = viewModel, block = {
+        viewModel.getLocationName()
+    })
+
+    OrderContent(
+        locationName = locationName,
+        wasteType = viewModel.wasteType.value,
+        wasteQty = viewModel.wasteQty.intValue.toString(),
+        notes = viewModel.notes.value,
+        wasteFee = viewModel.wasteFee,
+        isEnabled = viewModel.isEnabled,
+        wasteDetailsOnClick = { waste, qty ->
+            viewModel.wasteType.value = waste
+            viewModel.wasteQty.intValue = qty.toInt()
+            viewModel.refreshCount()
+        },
+        notesOnCLick = { newValue ->
+            viewModel.notes.value = newValue
+            viewModel.refreshCount()
+        },
+        orderOnClick = {
+            viewModel.createOrder()
+            viewModel.getCurrentOrderUser()
+        },
+        navigateToBack = navigateToBack
+    )
+
+    viewModel.ongoingOrder.collectAsState().value.let { order ->
+        when(order){
+            is UiState.Success -> {
+               val data = order.data
+               navigateToDelivery(data.orderId ?: -1)
+            }
+            else -> {}
+        }
+    }
 
 }
 
@@ -107,55 +161,73 @@ fun OrderContent(
         )
     }
 
-    Column(
+    LazyColumn(
+        state = LazyListState(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
         modifier = modifier
             .fillMaxSize()
             .background(gradient2(800f, 1600f))
     ) {
-        TopBar(
-            text = stringResource(R.string.order),
-            onBackClick = navigateToBack,
-            color = Color.White,
-            enableOnBack = true,
-        )
-        CartDetailsCard(
-            pickup = locationName,
-            wasteType = wasteType.type,
-            wasteQty = wasteQty.toInt(),
-            notes = notes,
-            wasteDetailsOnClick = {
-                showWasteModal = true
-            },
-            notesOnCLick = {
-                showNotesModal = true
-            },
-            modifier = Modifier
-                .weight(1f)
-                .padding(20.dp)
-        )
-        HomeSection(
-            title = stringResource(R.string.order_summary),
-            content = {
-                OrderSummaryCard(
-                    wasteFee = wasteFee,
-                    wasteType = wasteType.type,
-                    wasteQty = wasteQty.toInt()
+        item {
+            TopBar(
+                text = stringResource(R.string.order),
+                onBackClick = navigateToBack,
+                color = Color.White,
+                enableOnBack = true,
+            )
+        }
+        item {
+            CartDetailsCard(
+                pickup = locationName,
+                wasteType = wasteType.type,
+                wasteQty = wasteQty.toInt(),
+                notes = notes,
+                wasteDetailsOnClick = {
+                    showWasteModal = true
+                },
+                notesOnCLick = {
+                    showNotesModal = true
+                },
+                modifier = Modifier
+                    .padding(20.dp)
+            )
+        }
+        item {
+            HomeSection(
+                title = stringResource(R.string.order_summary),
+                content = {
+                    OrderSummaryCard(
+                        wasteFee = wasteFee,
+                        wasteType = wasteType.type,
+                        wasteQty = wasteQty.toInt()
+                    )
+                },
+                navigateToStatistic = { },
+                color = Color.White,
+                modifier = Modifier
+                    .padding(horizontal = 20.dp)
+            )
+        }
+        item {
+            Spacer(modifier = Modifier.fillMaxHeight())
+        }
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 25.dp),
+                verticalArrangement = Arrangement.Bottom
+            ) {
+                LargeButton(
+                    text = stringResource(id = R.string.order),
+                    color = BlueLagoon,
+                    onClick = orderOnClick,
+                    isEnabled = isEnabled,
+                    modifier = Modifier
+                        .padding(20.dp)
                 )
-            },
-            navigateToStatistic = { },
-            color = Color.White,
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 20.dp)
-        )
-        LargeButton(
-            text = stringResource(id = R.string.order),
-            color = BlueLagoon,
-            onClick = orderOnClick,
-            isEnabled = isEnabled,
-            modifier = Modifier.padding(20.dp)
-        )
+            }
+        }
     }
 
 }

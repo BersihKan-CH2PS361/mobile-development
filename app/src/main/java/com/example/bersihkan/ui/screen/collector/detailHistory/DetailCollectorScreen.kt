@@ -1,4 +1,4 @@
-package com.example.bersihkan.ui.screen.customer.detailHistory
+package com.example.bersihkan.ui.screen.collector.detailHistory
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -36,16 +36,18 @@ import com.example.bersihkan.ui.theme.textMediumMedium
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bersihkan.data.di.Injection
 import com.example.bersihkan.data.remote.response.DetailOrderAll
+import com.example.bersihkan.data.remote.response.DetailOrderCollectorAll
 import com.example.bersihkan.data.remote.response.DetailOrderResponse
 import com.example.bersihkan.ui.components.cards.CollectorInfoCard
+import com.example.bersihkan.ui.components.cards.DeliveryCollectorCard
 import com.example.bersihkan.ui.screen.ViewModelFactory
 import com.example.kekkomiapp.ui.common.UiState
 
 @Composable
-fun DetailScreen(
+fun DetailCollectorScreen(
     orderId: Int,
     navigateToBack: () -> Unit,
-    viewModel: DetailViewModel = viewModel(
+    viewModel: DetailCollectorViewModel = viewModel(
         factory = ViewModelFactory(Injection.provideRepository(LocalContext.current))
     ),
     modifier: Modifier = Modifier
@@ -74,14 +76,14 @@ fun DetailScreen(
                 }
             }
             is UiState.Success -> {
-                DetailContent(
+                DetailCollectorContent(
                     history = history.data,
                     navigateToBack = navigateToBack
                 )
             }
             is UiState.Error -> {
-                DetailContent(
-                    history = DetailOrderAll(),
+                DetailCollectorContent(
+                    history = DetailOrderCollectorAll(),
                     navigateToBack = navigateToBack,
                     isError = true,
                     textError = history.errorMsg
@@ -93,86 +95,76 @@ fun DetailScreen(
 }
 
 @Composable
-fun DetailContent(
-    history: DetailOrderAll,
+fun DetailCollectorContent(
+    history: DetailOrderCollectorAll,
     navigateToBack: () -> Unit,
     isError: Boolean = false,
     textError: String = "",
     modifier: Modifier = Modifier
 ) {
     val detailOrder = history.detailOrderResponse
-    val detailCollector = history.detailCollectorResponse
 
-    LazyColumn(
-        state = rememberLazyListState(),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
-        modifier = modifier
-            .background(gradient3(800f, 1600f))
-            .padding(start = 20.dp, end = 20.dp, top = 20.dp)
-            .fillMaxWidth()
-    ){
-        item {
-            TopBar(
-                text = stringResource(R.string.detail_history),
-                onBackClick = navigateToBack,
-                enableOnBack = true
-            )
-        }
-        if(isError){
-            item{
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillParentMaxSize()
-                ) {
-                    Text(
-                        text = textError,
-                        style = textMediumMedium,
-                        color = Grey
+    Box(modifier = modifier
+        .background(gradient3(800f, 1600f)))
+    {
+
+        LazyColumn(
+            state = rememberLazyListState(),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
+        ){
+            item {
+                TopBar(
+                    text = stringResource(R.string.detail_history),
+                    onBackClick = navigateToBack,
+                    enableOnBack = true
+                )
+            }
+            if(isError){
+                item{
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillParentMaxSize()
+                    ) {
+                        Text(
+                            text = textError,
+                            style = textMediumMedium,
+                            color = Grey
+                        )
+                    }
+                }
+            } else {
+                item {
+                    DeliveryCollectorCard(
+                        pickup = history.addressFromLatLng.toString(),
+                        wasteType = detailOrder?.wasteType.toString(),
+                        wasteQty = detailOrder?.wasteQty ?: 0,
+                        totalFee = detailOrder?.subtotalFee ?: 0,
+                        date = convertToDate(detailOrder?.orderDatetime ?: ""),
+                        notes = detailOrder?.userNotes.toString(),
+                        userName = detailOrder?.userName.toString(),
+                        userPhone = detailOrder?.userPhone.toString(),
+                        modifier = Modifier.padding(horizontal = 20.dp)
+                    )
+                }
+                item {
+                    HomeSection(
+                        title = stringResource(R.string.detail_fee),
+                        content = {
+                            if(detailOrder?.wasteType != null && detailOrder.wasteQty != null){
+                                OrderSummaryCard(
+                                    wasteFee = 4000,
+                                    wasteType = detailOrder.wasteType,
+                                    wasteQty = detailOrder.wasteQty,
+                                )
+                            }
+                        },
+                        navigateToStatistic = { },
+                        modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 30.dp)
                     )
                 }
             }
-        } else {
-            item {
-                DeliveryCustCard(
-                    // FIXME: Fix the pickup location
-                    pickup = history.addressFromLatLng.toString(),
-                    wasteType = detailOrder?.wasteType.toString(),
-                    wasteQty = detailOrder?.wasteQty ?: 0,
-                    totalFee = detailOrder?.subtotalFee ?: 0,
-                    date = convertToDate(detailOrder?.orderDatetime ?: ""),
-                    orderStatus = detailOrder?.orderStatus.toString()
-                )
-            }
-            item {
-                HomeSection(
-                    title = stringResource(R.string.detail_fee),
-                    content = {
-                        if(detailOrder?.wasteType != null && detailOrder?.wasteQty != null){
-                            OrderSummaryCard(
-                                wasteFee = 4000,
-                                wasteType = detailOrder?.wasteType,
-                                wasteQty = detailOrder?.wasteQty
-                            )
-                        }
-                    },
-                    navigateToStatistic = { }
-                )
-            }
-            item {
-                HomeSection(
-                    title = stringResource(R.string.collector_info),
-                    content = {
-                        CollectorInfoCard(
-                            name = detailCollector?.collectorName.toString(),
-                            phoneNumber = detailCollector?.phone.toString(),
-                            wasteHouse = detailCollector?.facilityName.toString()
-                        )
-                    },
-                    navigateToStatistic = { },
-                    modifier = Modifier.padding(bottom = 20.dp)
-                )
-            }
         }
+
     }
 
 }
@@ -181,8 +173,8 @@ fun DetailContent(
 @Composable
 fun DetailContentPreview() {
     BersihKanTheme {
-        DetailContent(
-            history = DataDummy.detailOrderAll1,
+        DetailCollectorContent(
+            history = DataDummy.detailOrderCollectorAll,
             navigateToBack = { /*TODO*/ }
         )
     }

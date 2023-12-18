@@ -4,13 +4,19 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.Surface
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,14 +43,73 @@ import com.example.bersihkan.ui.theme.gradient2
 import com.example.bersihkan.ui.theme.gradient3
 import com.example.bersihkan.utils.Statistics
 import com.example.bersihkan.utils.WasteType
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.bersihkan.data.di.Injection
+import com.example.bersihkan.ui.screen.ViewModelFactory
+import com.example.bersihkan.ui.theme.Grey
+import com.example.bersihkan.ui.theme.textMediumMedium
+import com.example.kekkomiapp.ui.common.UiState
 
 @Composable
 fun StatisticsScreen(
     navigateToBack: () -> Unit,
+    viewModel: StatisticsViewModel = viewModel(
+        factory = ViewModelFactory(Injection.provideRepository(LocalContext.current))
+    ),
     modifier: Modifier = Modifier
 ) {
 
+    LaunchedEffect(key1 = viewModel, block = {
+        viewModel.getDetailHistory()
+    })
 
+    viewModel.histories.collectAsState().value.let { data ->
+        when(data) {
+            is UiState.Initial -> {}
+            is UiState.Loading -> {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    CircularProgressIndicator(
+                        color = Grey,
+                        modifier = Modifier
+                            .size(50.dp)
+                            .align(Alignment.Center)
+                    )
+                }
+            }
+            is UiState.Success -> {
+                val history = data.data
+                StatisticContent(
+                    waste = calculateTotalWasteByType(history),
+                    statistics = calculateStatisticsTotals(history, LocalContext.current),
+                    data = calculateStatisticsCount(history, LocalContext.current),
+                    navigateToBack = navigateToBack,
+                    modifier = modifier
+                )
+            }
+            is UiState.Error -> {
+                Column(modifier) {
+                    TopBar(
+                        text = stringResource(id = R.string.statistics),
+                        onBackClick = navigateToBack,
+                        enableOnBack = true
+                    )
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Text(
+                            text = data.errorMsg,
+                            style = textMediumMedium,
+                            color = Grey
+                        )
+                    }
+                }
+            }
+        }
+    }
 
 }
 
