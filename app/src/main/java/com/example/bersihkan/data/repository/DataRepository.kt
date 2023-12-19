@@ -7,6 +7,8 @@ import com.example.bersihkan.BuildConfig
 import com.example.bersihkan.data.ResultState
 import com.example.bersihkan.data.local.model.UserModel
 import com.example.bersihkan.data.local.pref.UserPreference
+import com.example.bersihkan.data.local.room.RecommendationDao
+import com.example.bersihkan.data.local.room.RecommendationDatabase
 import com.example.bersihkan.data.remote.request.EditProfileRequest
 import com.example.bersihkan.data.remote.request.LoginRequest
 import com.example.bersihkan.data.remote.request.OrderRequest
@@ -27,14 +29,17 @@ import com.example.bersihkan.data.remote.retrofit.cc.ApiService
 import com.example.bersihkan.data.remote.retrofit.maps.MapsApiConfig
 import com.example.bersihkan.helper.isEmailValid
 import com.example.bersihkan.ml.RecommendationModel
-import com.example.bersihkan.ml.TFLiteModel
 import com.example.bersihkan.utils.OrderStatus
 import com.example.bersihkan.utils.UserRole
 import com.example.bersihkan.utils.WasteType
 import com.google.gson.Gson
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
 import retrofit2.HttpException
@@ -47,6 +52,7 @@ import java.util.Locale
 class DataRepository private constructor(
     private val context: Context,
     private val userPreference: UserPreference,
+    private val recommendationDao: RecommendationDao,
     private var apiService: ApiService
 ) {
 
@@ -273,7 +279,10 @@ class DataRepository private constructor(
         try {
             val response = apiService.getHistoryUser(session.id)
             val data: List<DetailOrderResponse> = response.map { history ->
-                val location = getAddressFromLatLng(history.pickupLatitude ?: 0f, history.pickupLongitude ?: 0f)
+                val location = getAddressFromLatLng(
+                    history.pickupLatitude ?: 0f,
+                    history.pickupLongitude ?: 0f
+                )
                 val collector =
                     apiService.getDetailFacilityByCollectorId(history.collectorId.toString())
                 history.copy(
@@ -298,7 +307,10 @@ class DataRepository private constructor(
         try {
             val response = apiService.getHistoryCollector(session.id)
             val data: List<DetailOrderResponse> = response.map { history ->
-                val location = getAddressFromLatLng(history.pickupLatitude ?: 0f, history.pickupLongitude ?: 0f)
+                val location = getAddressFromLatLng(
+                    history.pickupLatitude ?: 0f,
+                    history.pickupLongitude ?: 0f
+                )
                 val collector =
                     apiService.getDetailFacilityByCollectorId(history.collectorId.toString())
                 history.copy(
@@ -390,10 +402,11 @@ class DataRepository private constructor(
         try {
             val postalCode = getPostalCodeFromLocation(pickupLat.toDouble(), pickupLon.toDouble())
             Log.d(TAG, "createOrder: postalCode = $postalCode")
-            val facilityId = 5f
-            Log.d(TAG, "createOrder: facilityId = ${facilityId.toInt()}")
-            val collectorId = apiService.getDetailFacilityByFacilityId(facilityId.toInt().toString())
-            if(facilityId != 0f ){
+            val facilityId = getFacilityIdFromPostalCode(postalCode)
+            Log.d(TAG, "createOrder: facilityId = $facilityId")
+            if (facilityId != -1) {
+                val collectorId =
+                    apiService.getDetailFacilityByFacilityId(facilityId.toString())
                 val body = OrderRequest(
                     facilityId = collectorId.userId.toString(),
                     pickupFee = pickupFee,
@@ -409,6 +422,9 @@ class DataRepository private constructor(
                 val response = apiService.createOrder(user.id, requestBody = body)
                 Log.d(TAG, "createOrder: $response")
                 emit(ResultState.Success(response))
+            } else{
+                val errorMsg = "Sorry, BersihKan service is not available yet in your current location :(\n\nWe'll reach out to you as soon as possible."
+                emit(ResultState.Error(errorMsg))
             }
         } catch (e: HttpException) {
             val jsonInString = e.response()?.errorBody()?.string()
@@ -419,7 +435,10 @@ class DataRepository private constructor(
         }
     }
 
-    suspend fun updateOrderStatus(orderId: Int, orderStatus: OrderStatus): Flow<ResultState<GeneralResponse>> = flow{
+    suspend fun updateOrderStatus(
+        orderId: Int,
+        orderStatus: OrderStatus
+    ): Flow<ResultState<GeneralResponse>> = flow {
         try {
             val body = UpdateStatusRequest(orderStatus.status)
             val response = apiService.updateOrderStatus(orderId, body)
@@ -454,7 +473,8 @@ class DataRepository private constructor(
         try {
             val response = apiService.getDetailFacilityByCollectorId(userModel.id)
             Log.d(TAG, "getDetailUserById: $response")
-            emit(ResultState.Success(response.first()))
+            val data = response.first()
+            emit(ResultState.Success(data))
         } catch (e: HttpException) {
             val jsonInString = e.response()?.errorBody()?.string()
             val errorBody = Gson().fromJson(jsonInString, RegisterResponse::class.java)
@@ -524,46 +544,66 @@ class DataRepository private constructor(
 
     }
 
-    suspend fun getAllDetailOrderCollector(orderId: Int): Flow<ResultState<DetailOrderCollectorAll>> = flow {
+    suspend fun getAllDetailOrderCollector(orderId: Int): Flow<ResultState<DetailOrderCollectorAll>> =
+        flow {
 
+            try {
+                val detailOrder = apiService.getDetailOrderById(orderId).first()
+
+                val lat = detailOrder.pickupLatitude ?: 0f
+                val lon = detailOrder.pickupLongitude ?: 0f
+
+                val location = getAddressFromLatLng(lat, lon)
+
+                val detailOrderAll = DetailOrderCollectorAll(detailOrder, location)
+
+                Log.d(TAG, "detailOrderAll: $detailOrderAll")
+
+                emit(ResultState.Success(detailOrderAll))
+            } catch (e: HttpException) {
+                val jsonInString = e.response()?.errorBody()?.string()
+                val errorBody = Gson().fromJson(jsonInString, RegisterResponse::class.java)
+                val errorMessage = errorBody.message
+                errorMessage?.let { emit(ResultState.Error(it)) }
+                Log.e(TAG, "getContents: $errorMessage")
+            }
+
+        }
+
+    private fun getFacilityIdFromPostalCode(postalCode: Int): Int {
         try {
-            val detailOrder = apiService.getDetailOrderById(orderId).first()
-
-            val lat = detailOrder.pickupLatitude ?: 0f
-            val lon = detailOrder.pickupLongitude ?: 0f
-
-            val location = getAddressFromLatLng(lat, lon)
-
-            val detailOrderAll = DetailOrderCollectorAll(detailOrder, location)
-
-            Log.d(TAG, "detailOrderAll: $detailOrderAll")
-
-            emit(ResultState.Success(detailOrderAll))
-        } catch (e: HttpException) {
-            val jsonInString = e.response()?.errorBody()?.string()
-            val errorBody = Gson().fromJson(jsonInString, RegisterResponse::class.java)
-            val errorMessage = errorBody.message
-            errorMessage?.let { emit(ResultState.Error(it)) }
-            Log.e(TAG, "getContents: $errorMessage")
+            // Using a coroutine scope to launch a coroutine on a background thread
+            CoroutineScope(Dispatchers.IO).launch {
+                val recommendation = recommendationDao.getFacilityByPostalCode(postalCode)
+                if (recommendation != null) {
+                    val listFacility = listOf(
+                        recommendation.r1,
+                        recommendation.r2,
+                        recommendation.r3,
+                        recommendation.r4,
+                        recommendation.r5,
+                        recommendation.r6,
+                        recommendation.r7,
+                        recommendation.r8,
+                        recommendation.r9,
+                        recommendation.r10
+                    )
+                    withContext(Dispatchers.Main) {
+                        val randomElement = listFacility.randomOrNull() ?: -1
+                        Log.d(TAG, "Random facility ID: $randomElement")
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Log.d(TAG, "No recommendation found for postal code: $postalCode")
+                        // Handle the case where no recommendation is found, possibly update UI or perform other operations
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.d(TAG, "getFacilityIdFromPostalCode: ${e.message}")
+            return -1
         }
-
-    }
-
-    private fun getFacilityIdFromMLModel(postalCode: Int): FloatArray {
-        val tfliteModel = TFLiteModel(context)
-        tfliteModel.loadModel()
-        val inputData = floatArrayOf(1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, postalCode.toFloat())
-
-        // Prepare input data (postal code) for the model
-        val byteBuffer = ByteBuffer.allocateDirect(inputData.size * Float.SIZE_BYTES)
-        byteBuffer.order(ByteOrder.nativeOrder())
-        for (value in inputData) {
-            byteBuffer.putFloat(value)
-        }
-        byteBuffer.rewind()
-
-        // Perform inference and return the result
-        return tfliteModel.doInference(inputData)
+        return -1
     }
 
     private fun runMLModel(postalCode: Int): Float {
@@ -592,9 +632,11 @@ class DataRepository private constructor(
         }
 
         // Run model inference with the prepared input features
-        val outputs = model.process(inputBuffers[0], inputBuffers[1], inputBuffers[2], inputBuffers[3],
+        val outputs = model.process(
+            inputBuffers[0], inputBuffers[1], inputBuffers[2], inputBuffers[3],
             inputBuffers[4], inputBuffers[5], inputBuffers[6], inputBuffers[7],
-            inputBuffers[8], inputBuffers[9])
+            inputBuffers[8], inputBuffers[9]
+        )
 
         // Get the output TensorBuffer
         val outputFeature0 = outputs.outputFeature0AsTensorBuffer
@@ -629,9 +671,11 @@ class DataRepository private constructor(
         @Volatile
         private var instance: DataRepository? = null
         fun getInstance(
-            userPreference: UserPreference, apiService: ApiService, context: Context
+            userPreference: UserPreference,
+            recommendationDao: RecommendationDao,
+            apiService: ApiService, context: Context,
         ): DataRepository = instance ?: synchronized(this) {
-            instance ?: DataRepository(context, userPreference, apiService)
+            instance ?: DataRepository(context, userPreference, recommendationDao, apiService)
         }.also { instance = it }
     }
 

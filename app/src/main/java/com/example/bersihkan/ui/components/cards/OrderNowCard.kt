@@ -36,6 +36,7 @@ fun OrderNowCard(
     query: String,
     onQueryChange: (String) -> Unit,
     onClick: () -> Unit,
+    isEnable: Boolean,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -83,6 +84,7 @@ fun OrderNowCard(
         }
         OrderNowButton(
             onClick = onClick,
+            isEnable = isEnable,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
         )
@@ -117,6 +119,6 @@ fun OrderNowCard(
 @Composable
 fun OrderNowCardPreview() {
     BersihKanTheme {
-        OrderNowCard(query = "Jl. Ir. Juanda No.50", onQueryChange = { }, onClick = { })
+        OrderNowCard(query = "Jl. Ir. Juanda No.50", onQueryChange = { }, onClick = { }, isEnable = true)
     }
 }

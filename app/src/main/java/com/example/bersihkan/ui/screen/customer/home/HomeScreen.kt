@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -30,7 +31,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -54,6 +57,7 @@ import androidx.core.content.ContextCompat
 import androidx.work.Data
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
+import com.example.bersihkan.BuildConfig
 import com.example.bersihkan.R
 import com.example.bersihkan.data.di.Injection
 import com.example.bersihkan.data.local.DataDummy
@@ -80,11 +84,21 @@ import com.example.bersihkan.helper.calculateStatisticsTotals
 import com.example.bersihkan.helper.convertToDate
 import com.example.bersihkan.notification.NotificationWorker
 import com.example.bersihkan.ui.components.cards.OrderOngoingCard
+import com.example.bersihkan.ui.components.modal.RegisterLoginDialog
 import com.example.bersihkan.utils.Event
 import com.example.bersihkan.utils.UserRole
 import com.example.kekkomiapp.ui.common.UiState
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.libraries.places.api.Places
+import com.google.android.libraries.places.api.model.AutocompletePrediction
+import com.google.android.libraries.places.api.model.AutocompleteSessionToken
+import com.google.android.libraries.places.api.model.Place
+import com.google.android.libraries.places.api.net.FetchPlaceRequest
+import com.google.android.libraries.places.api.net.FetchPlaceResponse
+import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
+import com.google.android.libraries.places.api.net.FindAutocompletePredictionsResponse
 
 @Composable
 fun HomeScreen(
@@ -130,13 +144,22 @@ fun HomeScreen(
         context, Manifest.permission.POST_NOTIFICATIONS
     ) == PackageManager.PERMISSION_GRANTED
 
-    val requestPermissionLauncher =
+    val requestPermissionLocationLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
             if (isGranted) {
-//                getLocation(fusedLocationClient, context) { lat, lon ->
-//                    viewModel.lat.floatValue = lat.toFloat()
-//                    viewModel.lon.floatValue = lon.toFloat()
-//                }
+                getLocation(fusedLocationClient, context) { lat, lon ->
+                    viewModel.lat.floatValue = lat.toFloat()
+                    viewModel.lon.floatValue = lon.toFloat()
+                }
+            } else {
+                Toast.makeText(context, "Permission denied.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+    val requestPermissionNotificationLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+            if (isGranted) {
+                requestPermissionLocationLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
             } else {
                 Toast.makeText(context, "Permission denied.", Toast.LENGTH_SHORT).show()
             }
@@ -147,21 +170,21 @@ fun HomeScreen(
     } else {
         DisposableEffect(Unit) {
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
-                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                requestPermissionNotificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
             onDispose { }
         }
     }
 
     if (isPermissionGranted) {
-//        getLocation(fusedLocationClient, context) { lat, lon ->
-//            viewModel.lat.floatValue = lat.toFloat()
-//            viewModel.lon.floatValue = lon.toFloat()
-//        }
+        getLocation(fusedLocationClient, context) { lat, lon ->
+            viewModel.lat.floatValue = lat.toFloat()
+            viewModel.lon.floatValue = lon.toFloat()
+        }
         viewModel.getLocationName()
     } else {
         DisposableEffect(Unit) {
-            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            requestPermissionLocationLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
             onDispose { }
         }
     }
@@ -172,6 +195,7 @@ fun HomeScreen(
     val contents = viewModel.contents.collectAsState(initial = UiState.Loading).value
     val ongoingOrder = viewModel.ongoingOrder.collectAsState(initial = UiState.Loading).value
     val locationName = viewModel.locationName.collectAsState().value
+    val isEnable = viewModel.isEnable.collectAsState().value
 
     viewModel.notification.collectAsState().value.let {  notification ->
         notification.getContentIfNotHandled().let { isShowed ->
@@ -188,14 +212,41 @@ fun HomeScreen(
         }
     }
 
+    if(viewModel.isSearching.value){
+        SearchScreen(
+            onLocationClicked = { latLng ->
+                viewModel.lat.floatValue = latLng.latitude.toFloat()
+                viewModel.lon.floatValue = latLng.longitude.toFloat()
+                viewModel.isSearching.value = false
+            },
+            onErrorFetchData = {
+                viewModel.isErrorLocationShowed.value = true
+            }
+        )
+    }
+
+    if(viewModel.isErrorLocationShowed.value){
+        RegisterLoginDialog(
+            title = stringResource(R.string.error),
+            message = stringResource(R.string.failed_to_load_location_data),
+            onDismiss = {
+                viewModel.isSearching.value = false
+                viewModel.isErrorLocationShowed.value = false
+            }
+        )
+    }
+
     HomeContent(
         query = locationName,
-        onQueryChange = {},
+        onTextFieldCLick = {
+            viewModel.isSearching.value = true
+        },
         onClickOrderCard = {
-            navigateToOrder(viewModel.lat.value, viewModel.lon.value)
+            navigateToOrder(viewModel.lat.floatValue, viewModel.lon.floatValue)
         },
         histories = histories,
         contents = contents,
+        isEnable = isEnable,
         navigateToDetail = navigateToDetail,
         name = user.name,
         profile = if (user.role == UserRole.USER) R.drawable.ic_user_profile_2 else R.drawable.ic_collector_profile,
@@ -217,13 +268,14 @@ fun HomeScreen(
 @Composable
 fun HomeContent(
     query: String,
-    onQueryChange: (String) -> Unit,
+    onTextFieldCLick: () -> Unit,
     onClickOrderCard: () -> Unit,
     histories: UiState<List<DetailOrderResponse>>,
     contents: UiState<List<ContentsResponse>>,
     ongoingOrder: UiState<DetailOrderResponse>,
     name: String,
     profile: Int,
+    isEnable: Boolean,
     navigateToStatistics: () -> Unit,
     navigateToDetail: (Int) -> Unit,
     navigateToDelivery: (Int) -> Unit,
@@ -244,8 +296,9 @@ fun HomeContent(
                     )
                     OrderNowCard(
                         query = query,
-                        onQueryChange = onQueryChange,
+                        onQueryChange = { s -> onTextFieldCLick() },
                         onClick = onClickOrderCard,
+                        isEnable = isEnable,
                         modifier = Modifier
                             .padding(horizontal = 20.dp)
                             .offset(0.dp, 150.dp)
@@ -666,6 +719,125 @@ fun FunFactsCardRow(
         })
 }
 
+@Composable
+fun SearchScreen(
+    onLocationClicked: (LatLng) -> Unit,
+    onErrorFetchData: (String) -> Unit,
+) {
+    val context = LocalContext.current
+    val apiKey = BuildConfig.MAPS_TOKEN
+    Places.initialize(context.applicationContext, apiKey)
+
+    var searchText by remember {
+        mutableStateOf("")
+    }
+    var predictionList by remember {
+        mutableStateOf(emptyList<AutocompletePrediction>())
+    }
+
+    Column {
+        Column(modifier = Modifier.padding(16.dp)) {
+            // Search bar
+            TextField(
+                value = searchText,
+                onValueChange = { newValue ->
+                    searchText = newValue
+                    performAutocompleteSearch(context,
+                        query = searchText,
+                        onSearchResults = { predictions ->
+                            predictionList = predictions
+                        },
+                        onError = {
+                            predictionList = emptyList<AutocompletePrediction>()
+                        }
+                    )
+                },
+                label = { Text("Search Location") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Search results
+            LocationSearchResults(predictionList) { placeId ->
+                fetchPlaceDetails(context, placeId,
+                    onPlaceDetails = { latLng ->
+                        onLocationClicked(latLng)
+                    },
+                    onError = {
+                        Log.d("SearchScreen", "fetchPlaceDetails: ${it.message}")
+                        onErrorFetchData(it.message.toString())
+                    }
+                )
+            }
+        }
+    }
+
+}
+
+fun performAutocompleteSearch(context: Context, query: String, onSearchResults: (List<AutocompletePrediction>) -> Unit, onError: (Exception) -> Unit) {
+    val placesClient = Places.createClient(context)
+    val autocompleteRequest = AutocompleteSessionToken.newInstance()
+
+    val request = FindAutocompletePredictionsRequest.builder()
+        .setQuery(query)
+        .setSessionToken(autocompleteRequest)
+        .build()
+
+    placesClient.findAutocompletePredictions(request)
+        .addOnSuccessListener { response: FindAutocompletePredictionsResponse ->
+            val predictionsList = response.autocompletePredictions
+            onSearchResults(predictionsList)
+        }
+        .addOnFailureListener { exception: Exception ->
+            onError(exception)
+        }
+}
+
+@Composable
+fun LocationSearchResults(predictionsList: List<AutocompletePrediction>, onItemClick: (String) -> Unit) {
+    LazyColumn {
+        items(predictionsList) { prediction ->
+            Text(
+                text = prediction.getFullText(null).toString(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onItemClick(prediction.placeId) } // Pass placeId on item click
+                    .padding(16.dp)
+            )
+            Divider()
+        }
+    }
+}
+
+fun fetchPlaceDetails(context: Context, placeId: String, onPlaceDetails: (LatLng) -> Unit, onError: (Exception) -> Unit) {
+    val placesClient = Places.createClient(context)
+    val placeFields = listOf(Place.Field.LAT_LNG)
+
+    val request = FetchPlaceRequest.newInstance(placeId, placeFields)
+
+    placesClient.fetchPlace(request)
+        .addOnSuccessListener { response: FetchPlaceResponse ->
+            val place = response.place
+            val latLng = place.latLng
+            onPlaceDetails(latLng) // Pass LatLng to the callback function
+        }
+        .addOnFailureListener { exception: Exception ->
+            onError(exception)
+        }
+}
+
+// Function to handle item click
+fun onPredictionClicked(context: Context, placeId: String) {
+    fetchPlaceDetails(context, placeId,
+        onPlaceDetails = { latLng ->
+            // Handle LatLng - latLng.latitude and latLng.longitude
+        },
+        onError = { /* Handle error */ }
+    )
+}
+
+
 @Preview
 @Composable
 fun BannerPreview() {
@@ -688,9 +860,7 @@ fun HomeContentPreview() {
         val histories = UiState.Success(DataDummy.detailOrderResponse)
         HomeContent(
             query = query,
-            onQueryChange = { newValue ->
-                query = newValue
-            },
+            onTextFieldCLick = { },
             contents = contents,
             histories = histories,
             name = "Elizabeth",
@@ -700,6 +870,7 @@ fun HomeContentPreview() {
             onClickOrderCard = {},
             ongoingOrder = UiState.Success(DataDummy.detailOrderResponse[1]),
             navigateToDelivery = {},
+            isEnable = true
         )
     }
 }

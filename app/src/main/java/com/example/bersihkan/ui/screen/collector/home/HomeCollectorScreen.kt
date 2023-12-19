@@ -256,7 +256,7 @@ fun HomeCollectorContent(
                                         date = convertToDate(
                                             history.orderDatetime ?: ""
                                         ),
-                                        address = history.facilityName.toString(),
+                                        address = history.pickupLocation.toString(),
                                         type = history.wasteType ?: "",
                                         weight = history.wasteQty.toString(),
                                         modifier = Modifier

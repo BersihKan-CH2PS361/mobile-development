@@ -34,6 +34,8 @@ class DeliveryViewModel(private val repository: DataRepository) : ViewModel() {
                     is ResultState.Error -> {
                         _orderData.value = UiState.Error(response.error)
                     }
+
+                    else -> {}
                 }
             }
         }

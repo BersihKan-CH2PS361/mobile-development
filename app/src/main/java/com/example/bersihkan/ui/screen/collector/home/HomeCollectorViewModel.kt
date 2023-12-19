@@ -99,8 +99,9 @@ class HomeCollectorViewModel(private val repository: DataRepository) : ViewModel
                 when (response) {
                     is ResultState.Success -> {
                         val order = response.data.first()
-                        checkOrderStatusChange(findOrderStatus(order.orderStatus.toString()))
                         ongoingOrderId.value = order.orderId?.toInt() ?: -1
+                        val currentOrderStatus = findOrderStatus(order.orderStatus.toString())
+                        if(currentOrderStatus == OrderStatus.PICK_UP) checkOrderStatusChange(currentOrderStatus)
                         _ongoingOrder.value = UiState.Success(order)
                         isFirstLoadOrder = false
                     }

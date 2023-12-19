@@ -57,10 +57,23 @@ class OrderViewModel(private val repository: DataRepository): ViewModel() {
                 recycleFee = wasteFee,
                 subtotalFee = wasteFee.plus(12000)
             ).collect{ resultState ->
-                Log.d("RegisterViewModel", "$resultState")
+                Log.d("OrderViewModel", "$resultState")
                 when(resultState){
                     is ResultState.Success -> {
                         _response.value = UiState.Success(resultState.data)
+                        repository.getCurrentOrderUser().collect { response ->
+                            Log.d("HomeViewModel", "getCurrentOrderUser: $response")
+                            when (response) {
+                                is ResultState.Success -> {
+                                    val order = response.data.first()
+                                    _ongoingOrder.value = UiState.Success(order)
+                                }
+
+                                is ResultState.Error -> {
+                                    _ongoingOrder.value = UiState.Error(response.error)
+                                }
+                            }
+                        }
                     }
                     is ResultState.Error -> {
                         _response.value = UiState.Error(resultState.error)

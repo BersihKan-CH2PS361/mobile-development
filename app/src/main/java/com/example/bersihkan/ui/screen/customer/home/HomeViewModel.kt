@@ -55,9 +55,13 @@ class HomeViewModel(private val repository: DataRepository) : ViewModel() {
     val orderStatus: StateFlow<OrderStatus> get() = _orderStatus
     private var _notification: MutableStateFlow<Event<Boolean>> = MutableStateFlow(Event(false))
     val notification: StateFlow<Event<Boolean>> get() = _notification
+    private var _isEnable: MutableStateFlow<Boolean> = MutableStateFlow(true)
+    val isEnable: StateFlow<Boolean> get() = _isEnable
+    var isSearching = mutableStateOf(false)
+    var isErrorLocationShowed = mutableStateOf(false)
 
-    var lat = mutableFloatStateOf(-7.7829976f)
-    var lon = mutableFloatStateOf(110.3660218f)
+    var lat = mutableFloatStateOf(0f)
+    var lon = mutableFloatStateOf(0f)
 
     private var isFirstLoadHistory = true
     private var isFirstLoadContents = true
@@ -131,6 +135,7 @@ class HomeViewModel(private val repository: DataRepository) : ViewModel() {
                 Log.d("HomeViewModel", "getCurrentOrderUser: $response")
                 when (response) {
                     is ResultState.Success -> {
+                        _isEnable.value = false
                         val order = response.data.first()
                         checkOrderStatusChange(findOrderStatus(order.orderStatus.toString()))
                         ongoingOrderId.value = order.orderId?.toInt() ?: -1
@@ -139,6 +144,7 @@ class HomeViewModel(private val repository: DataRepository) : ViewModel() {
                     }
 
                     is ResultState.Error -> {
+                        _isEnable.value = true
                         _ongoingOrder.value = UiState.Error(response.error)
                         isFirstLoadOrder = false
                         repository.getDetailOrderById(orderId = ongoingOrderId.value).collect{ order ->

@@ -304,7 +304,13 @@ fun BersihKanApp(
                 DeliveryScreen(
                     orderId = id,
                     navigateToBack = {
-                        navController.navigateUp()
+                        navController.navigate(Screen.Home.route){
+                            popUpTo(navController.graph.findStartDestination().id){
+                                saveState = true
+                            }
+                            restoreState = true
+                            launchSingleTop = true
+                        }
                     })
             }
             composable(
@@ -321,7 +327,17 @@ fun BersihKanApp(
                     },
                     navigateToBack = {
                         navController.navigateUp()
-                    })
+                    },
+                    navigateToHome = {
+                        navController.navigate(Screen.Home.route){
+                            popUpTo(navController.graph.findStartDestination().id){
+                                saveState = true
+                            }
+                            restoreState = true
+                            launchSingleTop = true
+                        }
+                    }
+                    )
             }
             composable(Screen.HomeCollector.route){
                 HomeCollectorScreen(
@@ -354,7 +370,7 @@ fun BersihKanApp(
             composable(Screen.ProfileCollector.route){
                 ProfileCollectorScreen(
                     navigateToEditProfile = {
-                        navController.navigate(Screen.EditProfile.route){
+                        navController.navigate(Screen.EditProfileCollector.route){
                             popUpTo(navController.graph.findStartDestination().id){
                                 saveState = true
                             }
@@ -376,7 +392,7 @@ fun BersihKanApp(
                     }
                 )
             }
-            composable(Screen.EditProfile.route){
+            composable(Screen.EditProfileCollector.route){
                 EditProfileCollectorScreen(
                     saveOnClick = {
                         navController.navigate(Screen.ProfileCollector.route){
