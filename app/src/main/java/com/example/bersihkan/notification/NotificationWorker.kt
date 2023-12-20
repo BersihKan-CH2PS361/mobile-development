@@ -33,7 +33,7 @@ class NotificationWorker(context: Context, workerParams: WorkerParameters) : Wor
     private fun showNotification(title: String, description: String?) {
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val notification: NotificationCompat.Builder = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_logo_square)
+            .setSmallIcon(R.mipmap.ic_launcher_round)
             .setContentTitle(title)
             .setContentText(description)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

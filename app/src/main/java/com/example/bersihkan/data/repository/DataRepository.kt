@@ -7,8 +7,7 @@ import com.example.bersihkan.BuildConfig
 import com.example.bersihkan.data.ResultState
 import com.example.bersihkan.data.local.model.UserModel
 import com.example.bersihkan.data.local.pref.UserPreference
-import com.example.bersihkan.data.local.room.RecommendationDao
-import com.example.bersihkan.data.local.room.RecommendationDatabase
+import com.example.bersihkan.data.local.room.PostalCodeDao
 import com.example.bersihkan.data.remote.request.EditProfileRequest
 import com.example.bersihkan.data.remote.request.LoginRequest
 import com.example.bersihkan.data.remote.request.OrderRequest
@@ -47,12 +46,14 @@ import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.Locale
+import kotlin.random.Random
+
 
 @Suppress("DEPRECATION")
 class DataRepository private constructor(
     private val context: Context,
     private val userPreference: UserPreference,
-    private val recommendationDao: RecommendationDao,
+    private val dao: PostalCodeDao,
     private var apiService: ApiService
 ) {
 
@@ -402,7 +403,12 @@ class DataRepository private constructor(
         try {
             val postalCode = getPostalCodeFromLocation(pickupLat.toDouble(), pickupLon.toDouble())
             Log.d(TAG, "createOrder: postalCode = $postalCode")
-            val facilityId = getNewFacilityIdFromPostalCode(postalCode)
+            if(postalCode == 0) {
+                val errorMsg =
+                    "Sorry, BersihKan service is not available yet in your current location :(\n\nWe'll reach out to you as soon as possible."
+                emit(ResultState.Error(errorMsg))
+            }
+            val facilityId = getFacilityIdFromPostalCode(postalCode)
             Log.d(TAG, "createOrder: facilityId = $facilityId")
             if (facilityId != -1) {
                 val collectorId =
@@ -418,6 +424,8 @@ class DataRepository private constructor(
                     recycleFee = recycleFee,
                     wasteQty = wasteQty
                 )
+                Log.d(TAG, "orderRequest: $body")
+                Log.d(TAG, "subtotalFee: $subtotalFee")
                 val user = userPreference.getSession().first()
                 val response = apiService.createOrder(user.id, requestBody = body)
                 Log.d(TAG, "createOrder: $response")
@@ -506,14 +514,15 @@ class DataRepository private constructor(
 
         try {
             val addresses = geocoder.getFromLocation(latitude, longitude, 1)
-            if (addresses?.isNotEmpty() == true) {
+            if (addresses?.isNotEmpty() == true && addresses.get(0)?.postalCode != null) {
                 postalCode = addresses[0].postalCode ?: ""
+                Log.d(TAG, "postalCode: $postalCode, Latlng: $latitude, $longitude")
             }
         } catch (e: IOException) {
             e.printStackTrace()
         }
 
-        return postalCode.toInt()
+        return postalCode.toIntOrNull() ?: 0
     }
 
     suspend fun getAllDetailOrder(orderId: Int): Flow<ResultState<DetailOrderAll>> = flow {
@@ -570,107 +579,147 @@ class DataRepository private constructor(
 
         }
 
-    suspend fun getFacilityIdFromPostalCode(postalCode: Int): Int {
+//    suspend fun getFacilityIdFromPostalCode(postalCode: Int): Int {
+//        return withContext(Dispatchers.IO) {
+//            try {
+//                val recommendation = recommendationDao.getFacilityByPostalCode(postalCode)
+//                if (recommendation != null) {
+//                    val listFacility = listOf(
+//                        recommendation.r1,
+//                        recommendation.r2,
+//                        recommendation.r3,
+//                        recommendation.r4,
+//                        recommendation.r5,
+//                        recommendation.r6,
+//                        recommendation.r7,
+//                        recommendation.r8,
+//                        recommendation.r9,
+//                        recommendation.r10
+//                    )
+//                    val randomElement = listFacility.randomOrNull() ?: -1
+//                    Log.d(TAG, "Random facility ID: $randomElement")
+//                    return@withContext randomElement
+//                } else {
+//                    Log.d(TAG, "No recommendation found for postal code: $postalCode")
+//                    return@withContext -1
+//                }
+//            } catch (e: Exception) {
+//                Log.d(TAG, "getFacilityIdFromPostalCode: ${e.message}")
+//                return@withContext -1
+//            }
+//        }
+//    }
+
+    private suspend fun getFacilityIdFromPostalCode(postalCode: Int): Int {
+        val idx = getPostalCodeIdx(postalCode = postalCode)
+        if(idx != -1){
+            val recommendedIds = runMLModel(postalCode)
+            if (recommendedIds.isEmpty()) {
+                return -1
+            }
+            return selectFacilityId(recommendedIds.toMutableList())
+        }
+        return -1
+    }
+
+    private suspend fun getPostalCodeIdx(postalCode: Int): Int {
         return withContext(Dispatchers.IO) {
             try {
-                val recommendation = recommendationDao.getFacilityByPostalCode(postalCode)
-                if (recommendation != null) {
-                    val listFacility = listOf(
-                        recommendation.r1,
-                        recommendation.r2,
-                        recommendation.r3,
-                        recommendation.r4,
-                        recommendation.r5,
-                        recommendation.r6,
-                        recommendation.r7,
-                        recommendation.r8,
-                        recommendation.r9,
-                        recommendation.r10
-                    )
-                    val randomElement = listFacility.randomOrNull() ?: -1
-                    Log.d(TAG, "Random facility ID: $randomElement")
-                    return@withContext randomElement
+                val postalCodeData = dao.getIdxByPostalCode(postalCode)
+                Log.d(TAG, "postalCodeData: $postalCodeData")
+                if (postalCodeData != null) {
+                    val idx = postalCodeData.postalCodeIdx
+                    Log.d(TAG, "Postal Code Index: $idx")
+                    return@withContext idx
                 } else {
-                    Log.d(TAG, "No recommendation found for postal code: $postalCode")
+                    Log.d(TAG, "No postal index found for postal code: $postalCode")
                     return@withContext -1
                 }
             } catch (e: Exception) {
-                Log.d(TAG, "getFacilityIdFromPostalCode: ${e.message}")
+                Log.d(TAG, "getPostalCodeIdx: ${e.message}")
                 return@withContext -1
             }
         }
     }
 
-    suspend fun getNewFacilityIdFromPostalCode(postalCode: Int): Int{
-        val newFacilityId = getFacilityIdFromPostalCode(postalCode)
-        if(newFacilityId == -1){
+    private suspend fun selectFacilityId(recommendedIds: MutableList<Int>): Int {
+        if (recommendedIds.isEmpty()) {
+            // If the list of recommendedIds is empty, return a default value or handle as needed
+            Log.d(TAG, "selectFacilityId: No recommendation found")
             return -1
         }
-        return try {
-            val collectorId =
-                apiService.getDetailFacilityByFacilityId(newFacilityId.toString())
-            newFacilityId
-        } catch (e: Exception){
-            getFacilityIdFromPostalCode(postalCode)
+
+        val randomIndex = Random.nextInt(recommendedIds.size)
+        val newFacilityId = recommendedIds.removeAt(randomIndex) // Remove and obtain the random ID
+        try {
+            val collectorId = apiService.getDetailFacilityByFacilityId(newFacilityId.toString())
+            if (collectorId.facilityId != null) {
+                return newFacilityId // Return if collectorId exists for the chosen facilityId
+            }
+        } catch (e: Exception) {
+            // Handle exception if necessary, currently not doing anything specific
         }
+
+        // Recursive call to select another ID from the modified list (without the chosen ID)
+        return selectFacilityId(recommendedIds)
     }
 
-    private fun runMLModel(postalCode: Int): Float {
+    private fun runMLModel(postalCodeIdx: Int): List<Int> {
         val model = RecommendationModel.newInstance(context)
 
-        // Assuming your model expects 10 input features and the postal code is one of them
-        val numberOfFeatures = 10
+        val postalCodeValue = postalCodeIdx.toFloat()
 
-        // Create TensorBuffer instances for each input feature
-        val inputBuffers = Array(numberOfFeatures) {
-            TensorBuffer.createFixedSize(intArrayOf(1, 1), DataType.FLOAT32)
-        }
+        // Creates inputs for reference.
+        val inputFeature0 = TensorBuffer.createFixedSize(intArrayOf(1, 1), DataType.FLOAT32)
+        inputFeature0.loadBuffer(ByteBuffer.allocate(4).putFloat(postalCodeValue))
 
-        // Assuming you have an array of input data with 10 values including postal code
-        val inputData = floatArrayOf(1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, postalCode.toFloat())
+        val inputFeature1 = TensorBuffer.createFixedSize(intArrayOf(1, 1), DataType.FLOAT32)
+        inputFeature1.loadBuffer(ByteBuffer.allocate(4).putFloat(0f))
 
-        // Load input data into the corresponding TensorBuffer instances
-        for (i in 0 until numberOfFeatures) {
-            val byteBuffer = ByteBuffer.allocateDirect(Float.SIZE_BYTES)
-            byteBuffer.order(ByteOrder.nativeOrder())
-            byteBuffer.putFloat(inputData[i])
-            byteBuffer.rewind()
+        val inputFeature2 = TensorBuffer.createFixedSize(intArrayOf(1, 1), DataType.FLOAT32)
+        inputFeature1.loadBuffer(ByteBuffer.allocate(4).putFloat(1f))
 
-            // Load data into the TensorBuffer
-            inputBuffers[i].loadBuffer(byteBuffer)
-        }
+        val inputFeature3 = TensorBuffer.createFixedSize(intArrayOf(1, 1), DataType.FLOAT32)
+        inputFeature1.loadBuffer(ByteBuffer.allocate(4).putFloat(1f))
+
+        val inputFeature4 = TensorBuffer.createFixedSize(intArrayOf(1, 1), DataType.FLOAT32)
+        inputFeature1.loadBuffer(ByteBuffer.allocate(4).putFloat(1f))
+
+        val inputFeature5 = TensorBuffer.createFixedSize(intArrayOf(1, 1), DataType.FLOAT32)
+        inputFeature1.loadBuffer(ByteBuffer.allocate(4).putFloat(1f))
+
+        val inputFeature6 = TensorBuffer.createFixedSize(intArrayOf(1, 1), DataType.FLOAT32)
+        inputFeature1.loadBuffer(ByteBuffer.allocate(4).putFloat(1f))
+
+        val inputFeature7 = TensorBuffer.createFixedSize(intArrayOf(1, 1), DataType.FLOAT32)
+        inputFeature1.loadBuffer(ByteBuffer.allocate(4).putFloat(1f))
+
+        val inputFeature8 = TensorBuffer.createFixedSize(intArrayOf(1, 1), DataType.FLOAT32)
+        inputFeature1.loadBuffer(ByteBuffer.allocate(4).putFloat(1f))
+
+        val inputFeature9 = TensorBuffer.createFixedSize(intArrayOf(1, 1), DataType.FLOAT32)
+        inputFeature9.loadBuffer(ByteBuffer.allocate(4).putFloat(1f))
 
         // Run model inference with the prepared input features
-        val outputs = model.process(
-            inputBuffers[0], inputBuffers[1], inputBuffers[2], inputBuffers[3],
-            inputBuffers[4], inputBuffers[5], inputBuffers[6], inputBuffers[7],
-            inputBuffers[8], inputBuffers[9]
-        )
-
-        // Get the output TensorBuffer
+        val outputs = model.process(inputFeature0, inputFeature1, inputFeature2, inputFeature3, inputFeature4, inputFeature5, inputFeature6, inputFeature7, inputFeature8, inputFeature9)
         val outputFeature0 = outputs.outputFeature0AsTensorBuffer
 
-// Releases model resources if no longer used.
         model.close()
 
-        Log.d(TAG, "outputML: ${outputFeature0.buffer}")
-        Log.d(TAG, "outputML: ${outputFeature0.floatArray[0]}")
-        Log.d(TAG, "outputML: ${outputFeature0.intArray[0]}")
-        Log.d(TAG, "outputML: ${outputFeature0.dataType}")
-        Log.d(TAG, "outputML: ${outputFeature0.shape}")
-        Log.d(TAG, "outputML: ${outputFeature0.flatSize}")
-        Log.d(TAG, "outputML: ${outputFeature0.isDynamic}")
-        Log.d(TAG, "outputML: ${outputFeature0.typeSize}")
+        Log.d(TAG, "runMLModel: ${outputFeature0.floatArray[0]}")
 
-        return outputFeature0.floatArray[0]
-    }
+        val topK = 5 // Number of top recommendations
 
-    private fun createByteBufferForInt(value: Int): ByteBuffer {
-        val byteBuffer = ByteBuffer.allocateDirect(Int.SIZE_BYTES)
-            .order(ByteOrder.nativeOrder())
-        byteBuffer.putInt(value)
-        byteBuffer.rewind()
-        return byteBuffer
+        val indicesWithValues = outputFeature0.floatArray.withIndex().toList()
+
+        // Sort indices based on their corresponding values
+        val sortedIndices = indicesWithValues.sortedByDescending { it.value }.take(topK)
+
+        // Extract only indices from the sorted list
+        val recommendedIds = sortedIndices.map { it.index }
+        Log.d(TAG, "processedMLOutput: $recommendedIds")
+
+        return recommendedIds
     }
 
     companion object {
@@ -681,10 +730,10 @@ class DataRepository private constructor(
         private var instance: DataRepository? = null
         fun getInstance(
             userPreference: UserPreference,
-            recommendationDao: RecommendationDao,
+            dao: PostalCodeDao,
             apiService: ApiService, context: Context,
         ): DataRepository = instance ?: synchronized(this) {
-            instance ?: DataRepository(context, userPreference, recommendationDao, apiService)
+            instance ?: DataRepository(context, userPreference, dao, apiService)
         }.also { instance = it }
     }
 

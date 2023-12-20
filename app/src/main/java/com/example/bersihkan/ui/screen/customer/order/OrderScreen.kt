@@ -1,5 +1,6 @@
 package com.example.bersihkan.ui.screen.customer.order
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -87,6 +88,8 @@ fun OrderScreen(
     LaunchedEffect(key1 = viewModel, block = {
         viewModel.getLocationName()
     })
+
+    Log.d("OrderViewModal", "subtotalFee: ${viewModel.subtotalFee}")
 
     OrderContent(
         locationName = locationName,

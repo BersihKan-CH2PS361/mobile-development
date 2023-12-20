@@ -115,6 +115,8 @@ dependencies {
 
     implementation("com.google.android.libraries.places:places:3.3.0")
 
+    implementation("androidx.core:core-splashscreen:1.0.1")
+
 }
 
 configurations.all {

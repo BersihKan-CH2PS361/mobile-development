@@ -48,7 +48,7 @@ class HomeViewModel(private val repository: DataRepository) : ViewModel() {
     private val _ongoingOrder: MutableStateFlow<UiState<DetailOrderResponse>> =
         MutableStateFlow(UiState.Initial)
     val ongoingOrder: StateFlow<UiState<DetailOrderResponse>> get() = _ongoingOrder
-    private val _locationName: MutableStateFlow<String> = MutableStateFlow("")
+    private val _locationName: MutableStateFlow<String> = MutableStateFlow("Search for location..")
     val locationName: StateFlow<String> get() = _locationName
     private val ongoingOrderId: MutableStateFlow<Int> = MutableStateFlow(-1)
     private val _orderStatus: MutableStateFlow<OrderStatus> = MutableStateFlow(OrderStatus.INITIAL)

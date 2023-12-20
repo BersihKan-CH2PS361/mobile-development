@@ -9,10 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -29,7 +26,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.bersihkan.R
 import com.example.bersihkan.ui.components.ClickableText
-import com.example.bersihkan.ui.components.textFields.EmailTextField
 import com.example.bersihkan.ui.components.section.LoginRegisterSection
 import com.example.bersihkan.ui.components.textFields.PasswordTextField
 import com.example.bersihkan.ui.components.textFields.TextFieldContent
@@ -40,11 +36,9 @@ import com.example.bersihkan.helper.isEmailValid
 import com.example.bersihkan.helper.isPasswordValid
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bersihkan.data.di.Injection
-import com.example.bersihkan.ui.components.buttons.LargeButton
 import com.example.bersihkan.ui.components.buttons.MediumButton
 import com.example.bersihkan.ui.components.modal.RegisterLoginDialog
 import com.example.bersihkan.ui.screen.ViewModelFactory
-import com.example.bersihkan.ui.theme.Grey
 import com.example.bersihkan.utils.UserRole
 import com.example.kekkomiapp.ui.common.UiState
 

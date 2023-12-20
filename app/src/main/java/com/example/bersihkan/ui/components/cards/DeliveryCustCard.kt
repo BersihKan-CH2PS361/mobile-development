@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.example.bersihkan.R
 import com.example.bersihkan.data.local.DataDummy
 import com.example.bersihkan.helper.convertToDate
+import com.example.bersihkan.helper.formatToRupiah
 import com.example.bersihkan.ui.theme.BersihKanTheme
 import com.example.bersihkan.ui.theme.BlueChill
 import com.example.bersihkan.ui.theme.BonJour
@@ -163,7 +164,7 @@ fun DeliveryCustCard(
                                 modifier = Modifier.size(20.dp)
                             )
                             Text(
-                                text = "Rp.$totalFee",
+                                text = formatToRupiah(totalFee),
                                 style = textRegularExtraSmall.copy(
                                     color = Color.Black,
                                     textAlign = TextAlign.Start,

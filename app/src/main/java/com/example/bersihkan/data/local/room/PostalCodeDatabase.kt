@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.bersihkan.R
-import com.example.bersihkan.data.local.model.Recommendation
+import com.example.bersihkan.data.local.model.PostalCode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -19,23 +19,23 @@ import java.io.InputStreamReader
 
 @Database(
     version = 1,
-    entities = [Recommendation::class],
+    entities = [PostalCode::class],
     exportSchema = false
 )
-abstract class RecommendationDatabase : RoomDatabase() {
+abstract class PostalCodeDatabase : RoomDatabase() {
 
-    abstract fun recommendationDao(): RecommendationDao
+    abstract fun postalCodeDao(): PostalCodeDao
 
     companion object {
         @Volatile
-        private var INSTANCE: RecommendationDatabase? = null
+        private var INSTANCE: PostalCodeDatabase? = null
 
-        fun getInstance(context: Context): RecommendationDatabase {
+        fun getInstance(context: Context): PostalCodeDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE = Room.databaseBuilder(
                     context.applicationContext,
-                    RecommendationDatabase::class.java,
-                    "recommendation.db"
+                    PostalCodeDatabase::class.java,
+                    "postalcode.db"
                 )
                     .fallbackToDestructiveMigration()
                     .addCallback(object : Callback(){
@@ -43,17 +43,17 @@ abstract class RecommendationDatabase : RoomDatabase() {
                             super.onCreate(db)
                             INSTANCE?.let { database ->
                                 CoroutineScope(Dispatchers.IO).launch {
-                                    fillWithStartingData(context, database.recommendationDao())
+                                    fillWithStartingData(context, database.postalCodeDao())
                                 }
                             }
                         }
                     })
                     .build()
-                INSTANCE as RecommendationDatabase
+                INSTANCE as PostalCodeDatabase
             }
         }
 
-        private fun fillWithStartingData(context: Context, dao: RecommendationDao) {
+        private fun fillWithStartingData(context: Context, dao: PostalCodeDao) {
             val task = loadJsonArray(context)
             try {
                 if (task != null) {
@@ -61,18 +61,9 @@ abstract class RecommendationDatabase : RoomDatabase() {
                         val item = task.getJSONObject(i)
                         CoroutineScope(Dispatchers.IO).launch {
                             dao.insert(
-                                Recommendation(
-                                    postalCode = item.getInt("postalCode"),
-                                    r1 = item.getInt("r1"),
-                                    r2 = item.getInt("r2"),
-                                    r3 = item.getInt("r3"),
-                                    r4 = item.getInt("r4"),
-                                    r5 = item.getInt("r5"),
-                                    r6 = item.getInt("r6"),
-                                    r7 = item.getInt("r7"),
-                                    r8 = item.getInt("r8"),
-                                    r9 = item.getInt("r9"),
-                                    r10 = item.getInt("r10"),
+                                PostalCode(
+                                    postalCode = item.getInt("postal_code"),
+                                    postalCodeIdx = item.getInt("postal_code_index"),
                                 )
                             )
                         }
@@ -85,7 +76,7 @@ abstract class RecommendationDatabase : RoomDatabase() {
 
         private fun loadJsonArray(context: Context): JSONArray? {
             val builder = StringBuilder()
-            val `in` = context.resources.openRawResource(R.raw.recommendation)
+            val `in` = context.resources.openRawResource(R.raw.postal_code)
             val reader = BufferedReader(InputStreamReader(`in`))
             var line: String?
             try {
