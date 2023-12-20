@@ -18,7 +18,7 @@ Open the cloned repository as an Android Studio project.
 ### Step 3: Run Application in Emulator or Physical Device
 Run the project on an emulator or physical device of your choice.
 
-## Technologies Used
+## Library & Tools
 
 - Kotlin
 - Retrofit
