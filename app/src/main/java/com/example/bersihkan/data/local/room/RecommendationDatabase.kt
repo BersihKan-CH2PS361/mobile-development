@@ -38,7 +38,7 @@ abstract class RecommendationDatabase : RoomDatabase() {
                     "recommendation.db"
                 )
                     .fallbackToDestructiveMigration()
-                    .addCallback(object : RoomDatabase.Callback(){
+                    .addCallback(object : Callback(){
                         override fun onCreate(db: SupportSQLiteDatabase) {
                             super.onCreate(db)
                             INSTANCE?.let { database ->

@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.bersihkan.ui.BersihKanApp
 import com.example.bersihkan.ui.theme.BersihKanTheme
+import com.google.android.libraries.places.api.Places
 
 class MainActivity : ComponentActivity() {
 
@@ -22,6 +23,9 @@ class MainActivity : ComponentActivity() {
 //        val splashScreen = installSplashScreen()
 //
 //        splashScreen.setKeepOnScreenCondition{viewModel.isLoading.value}
+
+        val apiKey = BuildConfig.MAPS_TOKEN
+        Places.initialize(applicationContext, apiKey)
 
         setContent {
             BersihKanTheme {

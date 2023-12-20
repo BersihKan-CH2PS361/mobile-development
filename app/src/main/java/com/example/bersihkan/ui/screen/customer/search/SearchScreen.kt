@@ -1,25 +1,18 @@
-package com.example.bersihkan.ui.components
+package com.example.bersihkan.ui.screen.customer.search
 
 import android.content.Context
 import android.util.Log
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SearchBar
-import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -28,23 +21,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.bersihkan.R
+import com.example.bersihkan.ui.components.modal.RegisterLoginDialog
 import com.example.bersihkan.ui.theme.BersihKanTheme
-import com.example.bersihkan.ui.theme.BlueLagoon
-import com.example.bersihkan.ui.theme.BostonBlue
-import com.example.bersihkan.ui.theme.Botticelli
-import com.example.bersihkan.ui.theme.Grey
+import com.example.bersihkan.ui.theme.Mercury
+import com.example.bersihkan.ui.theme.Shapes
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.AutocompletePrediction
@@ -55,18 +42,11 @@ import com.google.android.libraries.places.api.net.FetchPlaceResponse
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsResponse
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Search(
+fun SearchScreen(
     query: String,
-    onClick: () -> Unit,
-    onLocationClicked: (LatLng) -> Unit,
-    onErrorFetchData: (String) -> Unit,
-    modifier: Modifier = Modifier
+    navigateToOrder: (Float, Float) -> Unit,
 ) {
-
-    var searchBarClicked by remember { mutableStateOf(false) }
-
     val context = LocalContext.current
 
     var searchText by remember {
@@ -76,74 +56,69 @@ fun Search(
         mutableStateOf(emptyList<AutocompletePrediction>())
     }
 
-    SearchBar(
-        query = query,
-        onQueryChange = { newValue ->
-            searchText = newValue
-            performAutocompleteSearch(context,
-                query = searchText,
-                onSearchResults = { predictions ->
-                    predictionList = predictions
-                },
-                onError = {
-                    predictionList = emptyList<AutocompletePrediction>()
-                }
-            )
-        },
-        onSearch = { newValue ->
-            searchText = newValue
-            performAutocompleteSearch(context,
-                query = searchText,
-                onSearchResults = { predictions ->
-                    predictionList = predictions
-                },
-                onError = {
-                    predictionList = emptyList<AutocompletePrediction>()
-                }
-            )
-        },
-        active = false,
-        enabled = false,
-        colors = SearchBarDefaults.colors(
-            containerColor = Botticelli,
-            inputFieldColors = TextFieldDefaults.colors(
-                disabledContainerColor = Botticelli,
-                disabledTextColor = Color.Black,
-                disabledLeadingIconColor = BlueLagoon
-            )
-        ),
-        onActiveChange = { },
-        leadingIcon = {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_search_bar),
-                tint = BostonBlue,
-                contentDescription = null
-            )
-        },
-        placeholder = {
-            Text(text = stringResource(R.string.search_location))
-        },
-        shape = MaterialTheme.shapes.large,
-        modifier = modifier
-            .clickable {
-                onClick()
-            }
-            .fillMaxWidth()
-            .heightIn(36.dp)
-            .padding(vertical = 0.dp, horizontal = 0.dp)
+    var isErrorLocation by remember {
+        mutableStateOf(false)
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
     ) {
-        LocationSearchResults(
-            predictionsList = predictionList,
-            onItemClick = { placeId ->
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+        ) {
+            // Search bar
+            TextField(
+                value = searchText,
+                onValueChange = { newValue ->
+                    searchText = newValue
+                    performAutocompleteSearch(context,
+                        query = searchText,
+                        onSearchResults = { predictions ->
+                            predictionList = predictions
+                        },
+                        onError = {
+                            predictionList = emptyList<AutocompletePrediction>()
+                        }
+                    )
+                },
+                shape = Shapes.small,
+                colors = TextFieldDefaults.colors(
+                    unfocusedContainerColor = Mercury,
+                    focusedContainerColor = Mercury
+                ),
+                label = { Text("Search Location") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(shape = Shapes.small)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Search results
+            LocationSearchResults(predictionList) { placeId ->
                 fetchPlaceDetails(context, placeId,
                     onPlaceDetails = { latLng ->
-                        onLocationClicked(latLng)
+                        val lat = latLng.latitude
+                        val lon = latLng.longitude
+                        navigateToOrder(lat.toFloat(), lon.toFloat())
                     },
                     onError = {
                         Log.d("SearchScreen", "fetchPlaceDetails: ${it.message}")
-                        onErrorFetchData(it.message.toString())
+                        isErrorLocation = true
                     }
                 )
+            }
+        }
+    }
+
+    if (isErrorLocation) {
+        RegisterLoginDialog(
+            title = stringResource(R.string.error),
+            message = stringResource(R.string.failed_to_load_location_data),
+            onDismiss = {
+                isErrorLocation = false
             }
         )
     }
@@ -202,15 +177,23 @@ fun fetchPlaceDetails(context: Context, placeId: String, onPlaceDetails: (LatLng
         }
 }
 
-@Preview
+//Function to handle item click
+fun onPredictionClicked(context: Context, placeId: String) {
+    fetchPlaceDetails(context, placeId,
+        onPlaceDetails = { latLng ->
+            // Handle LatLng - latLng.latitude and latLng.longitude
+        },
+        onError = { /* Handle error */ }
+    )
+}
+
+@Preview(showSystemUi = true)
 @Composable
-fun SearchPreview() {
+fun SearchScreenPreview() {
     BersihKanTheme {
-        Search(
-            query = "Jl.Ir Juanda No.50",
-            onClick = {},
-            onLocationClicked = {},
-            onErrorFetchData = {},
+        SearchScreen(
+            query = "Jl. Ir. Juanda No.50",
+            navigateToOrder = { lat, lng -> }
         )
     }
 }

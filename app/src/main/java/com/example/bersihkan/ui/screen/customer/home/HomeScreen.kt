@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -32,8 +33,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -85,6 +88,9 @@ import com.example.bersihkan.helper.convertToDate
 import com.example.bersihkan.notification.NotificationWorker
 import com.example.bersihkan.ui.components.cards.OrderOngoingCard
 import com.example.bersihkan.ui.components.modal.RegisterLoginDialog
+import com.example.bersihkan.ui.theme.Botticelli
+import com.example.bersihkan.ui.theme.Mercury
+import com.example.bersihkan.ui.theme.Shapes
 import com.example.bersihkan.utils.Event
 import com.example.bersihkan.utils.UserRole
 import com.example.kekkomiapp.ui.common.UiState
@@ -104,6 +110,7 @@ import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRe
 fun HomeScreen(
     navigateToHomeCustomer: () -> Unit,
     navigateToHomeCollector: () -> Unit,
+    navigateToSearch: (String) -> Unit,
     navigateToStatistics: () -> Unit,
     navigateToDetail: (Int) -> Unit,
     navigateToDelivery: (Int) -> Unit,
@@ -125,7 +132,7 @@ fun HomeScreen(
         if (!userModel.isLogin) {
             navigateToWelcomePage1()
         }
-        if(userModel.role == UserRole.COLLECTOR){
+        if (userModel.role == UserRole.COLLECTOR) {
             navigateToHomeCollector()
         }
     }
@@ -169,7 +176,7 @@ fun HomeScreen(
 
     } else {
         DisposableEffect(Unit) {
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 requestPermissionNotificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
             onDispose { }
@@ -189,6 +196,37 @@ fun HomeScreen(
         }
     }
 
+    viewModel.isSearching.collectAsState().value.let { isSearching ->
+        if (isSearching) {
+            Log.d("HomeScreen", "isSearching: Search Screen is showed")
+
+//            SearchScreen(
+//                query = viewModel.locationName.value,
+//                onLocationClicked = { latLng ->
+//                    viewModel.lat.floatValue = latLng.latitude.toFloat()
+//                    viewModel.lon.floatValue = latLng.longitude.toFloat()
+//                    viewModel.isNowSearching(false)
+//                },
+//                onErrorFetchData = {
+//                    viewModel.isErrorLocationShowed.value = true
+//                }
+//            )
+        } else {
+            Log.d("HomeScreen", "isSearching: $isSearching")
+        }
+    }
+
+    if (viewModel.isErrorLocationShowed.value) {
+        RegisterLoginDialog(
+            title = stringResource(R.string.error),
+            message = stringResource(R.string.failed_to_load_location_data),
+            onDismiss = {
+                viewModel.isNowSearching(false)
+                viewModel.isErrorLocationShowed.value = false
+            }
+        )
+    }
+
     val user = viewModel.userModel.collectAsState().value
 
     val histories = viewModel.histories.collectAsState(initial = UiState.Loading).value
@@ -197,9 +235,9 @@ fun HomeScreen(
     val locationName = viewModel.locationName.collectAsState().value
     val isEnable = viewModel.isEnable.collectAsState().value
 
-    viewModel.notification.collectAsState().value.let {  notification ->
+    viewModel.notification.collectAsState().value.let { notification ->
         notification.getContentIfNotHandled().let { isShowed ->
-            if(isShowed == true){
+            if (isShowed == true) {
                 val dataNotif = Data.Builder()
                     .putString(NotificationWorker.EXTRA_USER, UserRole.USER.role)
                     .putString(NotificationWorker.EXTRA_STATUS, viewModel.orderStatus.value.status)
@@ -212,41 +250,15 @@ fun HomeScreen(
         }
     }
 
-    if(viewModel.isSearching.value){
-        SearchScreen(
-            onLocationClicked = { latLng ->
-                viewModel.lat.floatValue = latLng.latitude.toFloat()
-                viewModel.lon.floatValue = latLng.longitude.toFloat()
-                viewModel.isSearching.value = false
-            },
-            onErrorFetchData = {
-                viewModel.isErrorLocationShowed.value = true
-            }
-        )
-    }
-
-    if(viewModel.isErrorLocationShowed.value){
-        RegisterLoginDialog(
-            title = stringResource(R.string.error),
-            message = stringResource(R.string.failed_to_load_location_data),
-            onDismiss = {
-                viewModel.isSearching.value = false
-                viewModel.isErrorLocationShowed.value = false
-            }
-        )
-    }
-
     HomeContent(
         query = locationName,
-        onTextFieldCLick = {
-            viewModel.isSearching.value = true
-        },
         onClickOrderCard = {
             navigateToOrder(viewModel.lat.floatValue, viewModel.lon.floatValue)
         },
         histories = histories,
         contents = contents,
         isEnable = isEnable,
+        navigateToSearch = { navigateToSearch(viewModel.locationName.value) },
         navigateToDetail = navigateToDetail,
         name = user.name,
         profile = if (user.role == UserRole.USER) R.drawable.ic_user_profile_2 else R.drawable.ic_collector_profile,
@@ -254,6 +266,14 @@ fun HomeScreen(
         ongoingOrder = ongoingOrder,
         navigateToDelivery = navigateToDelivery,
         modifier = modifier,
+        onLocationClicked = { latLng ->
+            viewModel.lat.floatValue = latLng.latitude.toFloat()
+            viewModel.lon.floatValue = latLng.longitude.toFloat()
+            viewModel.isNowSearching(false)
+        },
+        onErrorFetchData = {
+            viewModel.isErrorLocationShowed.value = true
+        }
     )
 
 //    Box(
@@ -268,8 +288,10 @@ fun HomeScreen(
 @Composable
 fun HomeContent(
     query: String,
-    onTextFieldCLick: () -> Unit,
     onClickOrderCard: () -> Unit,
+    onLocationClicked: (LatLng) -> Unit,
+    onErrorFetchData: (String) -> Unit,
+    navigateToSearch: () -> Unit,
     histories: UiState<List<DetailOrderResponse>>,
     contents: UiState<List<ContentsResponse>>,
     ongoingOrder: UiState<DetailOrderResponse>,
@@ -296,9 +318,11 @@ fun HomeContent(
                     )
                     OrderNowCard(
                         query = query,
-                        onQueryChange = { s -> onTextFieldCLick() },
+                        onLocationClicked = onLocationClicked,
+                        onErrorFetchData = onErrorFetchData,
                         onClick = onClickOrderCard,
                         isEnable = isEnable,
+                        onSearchBarClick = navigateToSearch,
                         modifier = Modifier
                             .padding(horizontal = 20.dp)
                             .offset(0.dp, 150.dp)
@@ -389,6 +413,7 @@ fun HomeContent(
                                 modifier = Modifier.padding(top = 90.dp, start = 20.dp)
                             )
                         }
+
                         else -> {}
                     }
                 }
@@ -471,6 +496,7 @@ fun HomeContent(
                                     .padding(top = 30.dp, start = 20.dp)
                             )
                         }
+
                         else -> {}
                     }
                 }
@@ -575,6 +601,7 @@ fun HomeContent(
                             }
                         }
                     }
+
                     else -> {}
                 }
             }
@@ -605,6 +632,7 @@ fun HomeContent(
                 is UiState.Error -> {
                     Log.d("HomeScreen", "ongoingOrder: ${data.errorMsg}")
                 }
+
                 else -> {}
             }
         }
@@ -719,125 +747,6 @@ fun FunFactsCardRow(
         })
 }
 
-@Composable
-fun SearchScreen(
-    onLocationClicked: (LatLng) -> Unit,
-    onErrorFetchData: (String) -> Unit,
-) {
-    val context = LocalContext.current
-    val apiKey = BuildConfig.MAPS_TOKEN
-    Places.initialize(context.applicationContext, apiKey)
-
-    var searchText by remember {
-        mutableStateOf("")
-    }
-    var predictionList by remember {
-        mutableStateOf(emptyList<AutocompletePrediction>())
-    }
-
-    Column {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Search bar
-            TextField(
-                value = searchText,
-                onValueChange = { newValue ->
-                    searchText = newValue
-                    performAutocompleteSearch(context,
-                        query = searchText,
-                        onSearchResults = { predictions ->
-                            predictionList = predictions
-                        },
-                        onError = {
-                            predictionList = emptyList<AutocompletePrediction>()
-                        }
-                    )
-                },
-                label = { Text("Search Location") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Search results
-            LocationSearchResults(predictionList) { placeId ->
-                fetchPlaceDetails(context, placeId,
-                    onPlaceDetails = { latLng ->
-                        onLocationClicked(latLng)
-                    },
-                    onError = {
-                        Log.d("SearchScreen", "fetchPlaceDetails: ${it.message}")
-                        onErrorFetchData(it.message.toString())
-                    }
-                )
-            }
-        }
-    }
-
-}
-
-fun performAutocompleteSearch(context: Context, query: String, onSearchResults: (List<AutocompletePrediction>) -> Unit, onError: (Exception) -> Unit) {
-    val placesClient = Places.createClient(context)
-    val autocompleteRequest = AutocompleteSessionToken.newInstance()
-
-    val request = FindAutocompletePredictionsRequest.builder()
-        .setQuery(query)
-        .setSessionToken(autocompleteRequest)
-        .build()
-
-    placesClient.findAutocompletePredictions(request)
-        .addOnSuccessListener { response: FindAutocompletePredictionsResponse ->
-            val predictionsList = response.autocompletePredictions
-            onSearchResults(predictionsList)
-        }
-        .addOnFailureListener { exception: Exception ->
-            onError(exception)
-        }
-}
-
-@Composable
-fun LocationSearchResults(predictionsList: List<AutocompletePrediction>, onItemClick: (String) -> Unit) {
-    LazyColumn {
-        items(predictionsList) { prediction ->
-            Text(
-                text = prediction.getFullText(null).toString(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onItemClick(prediction.placeId) } // Pass placeId on item click
-                    .padding(16.dp)
-            )
-            Divider()
-        }
-    }
-}
-
-fun fetchPlaceDetails(context: Context, placeId: String, onPlaceDetails: (LatLng) -> Unit, onError: (Exception) -> Unit) {
-    val placesClient = Places.createClient(context)
-    val placeFields = listOf(Place.Field.LAT_LNG)
-
-    val request = FetchPlaceRequest.newInstance(placeId, placeFields)
-
-    placesClient.fetchPlace(request)
-        .addOnSuccessListener { response: FetchPlaceResponse ->
-            val place = response.place
-            val latLng = place.latLng
-            onPlaceDetails(latLng) // Pass LatLng to the callback function
-        }
-        .addOnFailureListener { exception: Exception ->
-            onError(exception)
-        }
-}
-
-// Function to handle item click
-fun onPredictionClicked(context: Context, placeId: String) {
-    fetchPlaceDetails(context, placeId,
-        onPlaceDetails = { latLng ->
-            // Handle LatLng - latLng.latitude and latLng.longitude
-        },
-        onError = { /* Handle error */ }
-    )
-}
-
-
 @Preview
 @Composable
 fun BannerPreview() {
@@ -860,7 +769,8 @@ fun HomeContentPreview() {
         val histories = UiState.Success(DataDummy.detailOrderResponse)
         HomeContent(
             query = query,
-            onTextFieldCLick = { },
+            onLocationClicked = {},
+            onErrorFetchData = {},
             contents = contents,
             histories = histories,
             name = "Elizabeth",
@@ -870,7 +780,8 @@ fun HomeContentPreview() {
             onClickOrderCard = {},
             ongoingOrder = UiState.Success(DataDummy.detailOrderResponse[1]),
             navigateToDelivery = {},
-            isEnable = true
+            isEnable = true,
+            navigateToSearch = {}
         )
     }
 }

@@ -1,6 +1,8 @@
 package com.example.bersihkan.ui.components.cards
 
+import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,11 +32,14 @@ import com.example.bersihkan.ui.theme.Botticelli
 import com.example.bersihkan.ui.theme.gradient2
 import com.example.bersihkan.ui.theme.headlineExtraSmall
 import com.example.bersihkan.ui.theme.textMediumLarge
+import com.google.android.gms.maps.model.LatLng
 
 @Composable
 fun OrderNowCard(
     query: String,
-    onQueryChange: (String) -> Unit,
+    onLocationClicked: (LatLng) -> Unit,
+    onErrorFetchData: (String) -> Unit,
+    onSearchBarClick: () -> Unit,
     onClick: () -> Unit,
     isEnable: Boolean,
     modifier: Modifier = Modifier
@@ -77,7 +82,9 @@ fun OrderNowCard(
                     )
                     Search(
                         query = query,
-                        onQueryChange = onQueryChange,
+                        onLocationClicked = onLocationClicked,
+                        onErrorFetchData = onErrorFetchData,
+                        onClick = onSearchBarClick,
                     )
                 }
             }
@@ -119,6 +126,6 @@ fun OrderNowCard(
 @Composable
 fun OrderNowCardPreview() {
     BersihKanTheme {
-        OrderNowCard(query = "Jl. Ir. Juanda No.50", onQueryChange = { }, onClick = { }, isEnable = true)
+        OrderNowCard(query = "Jl. Ir. Juanda No.50", onLocationClicked = {}, onClick = { }, onErrorFetchData ={}, onSearchBarClick = {}, isEnable = true)
     }
 }

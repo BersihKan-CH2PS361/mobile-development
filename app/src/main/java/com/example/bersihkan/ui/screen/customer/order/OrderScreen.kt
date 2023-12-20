@@ -127,6 +127,7 @@ fun OrderScreen(
                    }
                } }
             is UiState.Error -> {
+                showDialog = true
                 if(showDialog){
                     RegisterLoginDialog(
                         title = stringResource(R.string.order_failed),

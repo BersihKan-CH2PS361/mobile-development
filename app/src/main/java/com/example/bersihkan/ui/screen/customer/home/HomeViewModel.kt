@@ -57,7 +57,8 @@ class HomeViewModel(private val repository: DataRepository) : ViewModel() {
     val notification: StateFlow<Event<Boolean>> get() = _notification
     private var _isEnable: MutableStateFlow<Boolean> = MutableStateFlow(true)
     val isEnable: StateFlow<Boolean> get() = _isEnable
-    var isSearching = mutableStateOf(false)
+    private var _isSearching: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val isSearching: StateFlow<Boolean> = _isSearching
     var isErrorLocationShowed = mutableStateOf(false)
 
     var lat = mutableFloatStateOf(0f)
@@ -66,6 +67,11 @@ class HomeViewModel(private val repository: DataRepository) : ViewModel() {
     private var isFirstLoadHistory = true
     private var isFirstLoadContents = true
     private var isFirstLoadOrder = true
+
+    fun isNowSearching(search: Boolean){
+        _isSearching.value = search
+        Log.d("HomeViewModel", "isSearching: $search")
+    }
 
     fun refreshData() {
         viewModelScope.launch {

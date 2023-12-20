@@ -402,7 +402,7 @@ class DataRepository private constructor(
         try {
             val postalCode = getPostalCodeFromLocation(pickupLat.toDouble(), pickupLon.toDouble())
             Log.d(TAG, "createOrder: postalCode = $postalCode")
-            val facilityId = getFacilityIdFromPostalCode(postalCode)
+            val facilityId = getNewFacilityIdFromPostalCode(postalCode)
             Log.d(TAG, "createOrder: facilityId = $facilityId")
             if (facilityId != -1) {
                 val collectorId =
@@ -431,7 +431,7 @@ class DataRepository private constructor(
             val errorBody = Gson().fromJson(jsonInString, GeneralResponse::class.java)
             val errorMessage = errorBody.status
             errorMessage?.let { emit(ResultState.Error(it)) }
-            Log.e(TAG, "getContents: $errorMessage")
+            Log.e(TAG, "createOrder: $errorMessage")
         }
     }
 
@@ -570,10 +570,9 @@ class DataRepository private constructor(
 
         }
 
-    private fun getFacilityIdFromPostalCode(postalCode: Int): Int {
-        try {
-            // Using a coroutine scope to launch a coroutine on a background thread
-            CoroutineScope(Dispatchers.IO).launch {
+    suspend fun getFacilityIdFromPostalCode(postalCode: Int): Int {
+        return withContext(Dispatchers.IO) {
+            try {
                 val recommendation = recommendationDao.getFacilityByPostalCode(postalCode)
                 if (recommendation != null) {
                     val listFacility = listOf(
@@ -588,22 +587,32 @@ class DataRepository private constructor(
                         recommendation.r9,
                         recommendation.r10
                     )
-                    withContext(Dispatchers.Main) {
-                        val randomElement = listFacility.randomOrNull() ?: -1
-                        Log.d(TAG, "Random facility ID: $randomElement")
-                    }
+                    val randomElement = listFacility.randomOrNull() ?: -1
+                    Log.d(TAG, "Random facility ID: $randomElement")
+                    return@withContext randomElement
                 } else {
-                    withContext(Dispatchers.Main) {
-                        Log.d(TAG, "No recommendation found for postal code: $postalCode")
-                        // Handle the case where no recommendation is found, possibly update UI or perform other operations
-                    }
+                    Log.d(TAG, "No recommendation found for postal code: $postalCode")
+                    return@withContext -1
                 }
+            } catch (e: Exception) {
+                Log.d(TAG, "getFacilityIdFromPostalCode: ${e.message}")
+                return@withContext -1
             }
-        } catch (e: Exception) {
-            Log.d(TAG, "getFacilityIdFromPostalCode: ${e.message}")
+        }
+    }
+
+    suspend fun getNewFacilityIdFromPostalCode(postalCode: Int): Int{
+        val newFacilityId = getFacilityIdFromPostalCode(postalCode)
+        if(newFacilityId == -1){
             return -1
         }
-        return -1
+        return try {
+            val collectorId =
+                apiService.getDetailFacilityByFacilityId(newFacilityId.toString())
+            newFacilityId
+        } catch (e: Exception){
+            getFacilityIdFromPostalCode(postalCode)
+        }
     }
 
     private fun runMLModel(postalCode: Int): Float {

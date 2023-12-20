@@ -1,5 +1,6 @@
 package com.example.bersihkan.ui
 
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -58,6 +59,7 @@ import com.example.bersihkan.ui.screen.collector.editProfile.EditProfileCollecto
 import com.example.bersihkan.ui.screen.collector.history.HistoryCollectorScreen
 import com.example.bersihkan.ui.screen.collector.home.HomeCollectorScreen
 import com.example.bersihkan.ui.screen.collector.profile.ProfileCollectorScreen
+import com.example.bersihkan.ui.screen.customer.search.SearchScreen
 import com.example.bersihkan.utils.UserRole
 
 @Composable
@@ -225,6 +227,9 @@ fun BersihKanApp(
                     },
                     navigateToOrder = { lat,lon ->
                         navController.navigate(Screen.Order.createRoute(lat, lon))
+                    },
+                    navigateToSearch = { location ->
+                        navController.navigate(Screen.Search.createRoute(location))
                     }
                 )
             }
@@ -304,13 +309,8 @@ fun BersihKanApp(
                 DeliveryScreen(
                     orderId = id,
                     navigateToBack = {
-                        navController.navigate(Screen.Home.route){
-                            popUpTo(navController.graph.findStartDestination().id){
-                                saveState = true
-                            }
-                            restoreState = true
-                            launchSingleTop = true
-                        }
+                        Log.d("BersihKanApp", "navigateToHome")
+                        navController.navigateUp()
                     })
             }
             composable(
@@ -338,6 +338,18 @@ fun BersihKanApp(
                         }
                     }
                     )
+            }
+            composable(
+                route = Screen.Search.route,
+                arguments = listOf(navArgument("location"){ type = NavType.StringType })
+            ){
+                val query = it.arguments?.getString("location") ?: ""
+                SearchScreen(
+                    query = query,
+                    navigateToOrder = { lat, lon ->
+                        navController.navigate(Screen.Order.createRoute(lat, lon))
+                    }
+                )
             }
             composable(Screen.HomeCollector.route){
                 HomeCollectorScreen(
