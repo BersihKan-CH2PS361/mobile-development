@@ -62,7 +62,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import coil.compose.rememberImagePainter
 import coil.request.ImageRequest
-import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.example.bersihkan.BuildConfig
 import com.example.bersihkan.data.di.Injection
 import com.example.bersihkan.data.remote.response.DetailOrderCollectorAll

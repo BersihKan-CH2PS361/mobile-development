@@ -48,20 +48,30 @@ class HomeViewModel(private val repository: DataRepository) : ViewModel() {
     private val _ongoingOrder: MutableStateFlow<UiState<DetailOrderResponse>> =
         MutableStateFlow(UiState.Initial)
     val ongoingOrder: StateFlow<UiState<DetailOrderResponse>> get() = _ongoingOrder
-    private val _locationName: MutableStateFlow<String> = MutableStateFlow("")
+    private val _locationName: MutableStateFlow<String> = MutableStateFlow("Search for location..")
     val locationName: StateFlow<String> get() = _locationName
     private val ongoingOrderId: MutableStateFlow<Int> = MutableStateFlow(-1)
     private val _orderStatus: MutableStateFlow<OrderStatus> = MutableStateFlow(OrderStatus.INITIAL)
     val orderStatus: StateFlow<OrderStatus> get() = _orderStatus
     private var _notification: MutableStateFlow<Event<Boolean>> = MutableStateFlow(Event(false))
     val notification: StateFlow<Event<Boolean>> get() = _notification
+    private var _isEnable: MutableStateFlow<Boolean> = MutableStateFlow(true)
+    val isEnable: StateFlow<Boolean> get() = _isEnable
+    private var _isSearching: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val isSearching: StateFlow<Boolean> = _isSearching
+    var isErrorLocationShowed = mutableStateOf(false)
 
-    var lat = mutableFloatStateOf(-7.7829976f)
-    var lon = mutableFloatStateOf(110.3660218f)
+    var lat = mutableFloatStateOf(0f)
+    var lon = mutableFloatStateOf(0f)
 
     private var isFirstLoadHistory = true
     private var isFirstLoadContents = true
     private var isFirstLoadOrder = true
+
+    fun isNowSearching(search: Boolean){
+        _isSearching.value = search
+        Log.d("HomeViewModel", "isSearching: $search")
+    }
 
     fun refreshData() {
         viewModelScope.launch {
@@ -131,6 +141,7 @@ class HomeViewModel(private val repository: DataRepository) : ViewModel() {
                 Log.d("HomeViewModel", "getCurrentOrderUser: $response")
                 when (response) {
                     is ResultState.Success -> {
+                        _isEnable.value = false
                         val order = response.data.first()
                         checkOrderStatusChange(findOrderStatus(order.orderStatus.toString()))
                         ongoingOrderId.value = order.orderId?.toInt() ?: -1
@@ -139,6 +150,7 @@ class HomeViewModel(private val repository: DataRepository) : ViewModel() {
                     }
 
                     is ResultState.Error -> {
+                        _isEnable.value = true
                         _ongoingOrder.value = UiState.Error(response.error)
                         isFirstLoadOrder = false
                         repository.getDetailOrderById(orderId = ongoingOrderId.value).collect{ order ->

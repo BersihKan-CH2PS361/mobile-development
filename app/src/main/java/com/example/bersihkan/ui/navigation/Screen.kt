@@ -30,4 +30,8 @@ sealed class Screen(val route: String){
     object DeliveryCollector: Screen("delivery-collector/{orderId}"){
         fun createRoute(orderId: Int) = "delivery-collector/$orderId"
     }
+    object Search: Screen("search/{location}"){
+        fun createRoute(location: String) = "search/$location"
+
+    }
 }

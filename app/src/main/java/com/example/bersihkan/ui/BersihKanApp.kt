@@ -1,7 +1,6 @@
 package com.example.bersihkan.ui
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+import android.util.Log
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -16,11 +15,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -58,12 +55,13 @@ import com.example.bersihkan.ui.screen.collector.editProfile.EditProfileCollecto
 import com.example.bersihkan.ui.screen.collector.history.HistoryCollectorScreen
 import com.example.bersihkan.ui.screen.collector.home.HomeCollectorScreen
 import com.example.bersihkan.ui.screen.collector.profile.ProfileCollectorScreen
+import com.example.bersihkan.ui.screen.customer.search.SearchScreen
 import com.example.bersihkan.utils.UserRole
 
 @Composable
 fun BersihKanApp(
     navController: NavHostController = rememberNavController(),
-    viewModel: MainViewModel = viewModel(
+    viewModel: BaseViewModel = viewModel(
         factory = ViewModelFactory(Injection.provideRepository(LocalContext.current))
     ),
     modifier: Modifier = Modifier
@@ -225,6 +223,9 @@ fun BersihKanApp(
                     },
                     navigateToOrder = { lat,lon ->
                         navController.navigate(Screen.Order.createRoute(lat, lon))
+                    },
+                    navigateToSearch = { location ->
+                        navController.navigate(Screen.Search.createRoute(location))
                     }
                 )
             }
@@ -304,6 +305,7 @@ fun BersihKanApp(
                 DeliveryScreen(
                     orderId = id,
                     navigateToBack = {
+                        Log.d("BersihKanApp", "navigateToHome")
                         navController.navigateUp()
                     })
             }
@@ -321,7 +323,29 @@ fun BersihKanApp(
                     },
                     navigateToBack = {
                         navController.navigateUp()
-                    })
+                    },
+                    navigateToHome = {
+                        navController.navigate(Screen.Home.route){
+                            popUpTo(navController.graph.findStartDestination().id){
+                                saveState = true
+                            }
+                            restoreState = true
+                            launchSingleTop = true
+                        }
+                    }
+                    )
+            }
+            composable(
+                route = Screen.Search.route,
+                arguments = listOf(navArgument("location"){ type = NavType.StringType })
+            ){
+                val query = it.arguments?.getString("location") ?: ""
+                SearchScreen(
+                    query = query,
+                    navigateToOrder = { lat, lon ->
+                        navController.navigate(Screen.Order.createRoute(lat, lon))
+                    }
+                )
             }
             composable(Screen.HomeCollector.route){
                 HomeCollectorScreen(
@@ -354,7 +378,7 @@ fun BersihKanApp(
             composable(Screen.ProfileCollector.route){
                 ProfileCollectorScreen(
                     navigateToEditProfile = {
-                        navController.navigate(Screen.EditProfile.route){
+                        navController.navigate(Screen.EditProfileCollector.route){
                             popUpTo(navController.graph.findStartDestination().id){
                                 saveState = true
                             }
@@ -376,7 +400,7 @@ fun BersihKanApp(
                     }
                 )
             }
-            composable(Screen.EditProfile.route){
+            composable(Screen.EditProfileCollector.route){
                 EditProfileCollectorScreen(
                     saveOnClick = {
                         navController.navigate(Screen.ProfileCollector.route){

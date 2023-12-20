@@ -34,6 +34,7 @@ class OrderViewModel(private val repository: DataRepository): ViewModel() {
     var wasteType = mutableStateOf(WasteType.INITIAL)
     var wasteQty = mutableIntStateOf(0)
     var wasteFee = wasteQty.intValue.times(wasteType.value.price)
+    var subtotalFee = wasteFee.plus(12000)
     var notes = mutableStateOf("")
     var isEnabled = wasteType.value != WasteType.INITIAL && wasteQty.intValue != 0 && wasteFee != 0 && notes.value != ""
 
@@ -45,6 +46,8 @@ class OrderViewModel(private val repository: DataRepository): ViewModel() {
     }
 
     fun createOrder(){
+        Log.d("OrderViewModal", "wasteFee: $wasteFee")
+        Log.d("OrderViewModal", "subtotalFee: $subtotalFee")
         viewModelScope.launch {
             _response.value = UiState.Loading
             repository.createOrder(
@@ -55,12 +58,25 @@ class OrderViewModel(private val repository: DataRepository): ViewModel() {
                 userNotes = notes.value,
                 pickupFee = 12000,
                 recycleFee = wasteFee,
-                subtotalFee = wasteFee.plus(12000)
+                subtotalFee = subtotalFee
             ).collect{ resultState ->
-                Log.d("RegisterViewModel", "$resultState")
+                Log.d("OrderViewModel", "$resultState")
                 when(resultState){
                     is ResultState.Success -> {
                         _response.value = UiState.Success(resultState.data)
+                        repository.getCurrentOrderUser().collect { response ->
+                            Log.d("HomeViewModel", "getCurrentOrderUser: $response")
+                            when (response) {
+                                is ResultState.Success -> {
+                                    val order = response.data.first()
+                                    _ongoingOrder.value = UiState.Success(order)
+                                }
+
+                                is ResultState.Error -> {
+                                    _ongoingOrder.value = UiState.Error(response.error)
+                                }
+                            }
+                        }
                     }
                     is ResultState.Error -> {
                         _response.value = UiState.Error(resultState.error)
@@ -72,6 +88,7 @@ class OrderViewModel(private val repository: DataRepository): ViewModel() {
 
     fun refreshCount(){
         wasteFee = wasteQty.intValue.times(wasteType.value.price)
+        subtotalFee = wasteFee.plus(12000)
         isEnabled = wasteType.value != WasteType.INITIAL && wasteQty.intValue != 0 && wasteFee != 0 && notes.value != ""
     }
 

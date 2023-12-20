@@ -19,10 +19,12 @@ import androidx.compose.ui.unit.dp
 import com.example.bersihkan.R
 import com.example.bersihkan.ui.theme.BersihKanTheme
 import com.example.bersihkan.ui.theme.BlueLagoon
+import com.example.bersihkan.ui.theme.BostonBlue
 import com.example.bersihkan.ui.theme.fontFamily
 
 @Composable
 fun OrderNowButton(
+    isEnable: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -47,10 +49,12 @@ fun OrderNowButton(
 
         Button(
             onClick = onClick,
-            enabled = true,
+            enabled = isEnable,
             colors = ButtonDefaults.buttonColors(
                 contentColor = Color.White,
-                containerColor = BlueLagoon
+                containerColor = BlueLagoon,
+                disabledContainerColor = BostonBlue,
+                disabledContentColor = Color.White,
             ),
             modifier = modifier
                 .height(36.dp)
@@ -68,6 +72,6 @@ fun OrderNowButton(
 @Composable
 fun OrderNowButtonPreview() {
     BersihKanTheme {
-        OrderNowButton(onClick = { })
+        OrderNowButton(onClick = { }, isEnable = true)
     }
 }

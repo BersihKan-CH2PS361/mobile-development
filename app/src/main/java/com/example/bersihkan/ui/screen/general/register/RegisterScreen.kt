@@ -138,6 +138,8 @@ fun RegisterScreen(
                     )
                 }
             }
+
+            else -> {}
         }
     }
 

@@ -1,5 +1,6 @@
 package com.example.bersihkan.ui.screen.customer.order
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -47,6 +48,7 @@ import com.example.bersihkan.ui.components.buttons.LargeButton
 import com.example.bersihkan.ui.components.buttons.SmallButton
 import com.example.bersihkan.ui.components.cards.CartDetailsCard
 import com.example.bersihkan.ui.components.cards.OrderSummaryCard
+import com.example.bersihkan.ui.components.modal.RegisterLoginDialog
 import com.example.bersihkan.ui.components.section.HomeSection
 import com.example.bersihkan.ui.components.textFields.NotesInput
 import com.example.bersihkan.ui.components.textFields.QuantityInput
@@ -68,6 +70,7 @@ import com.example.kekkomiapp.ui.common.UiState
 fun OrderScreen(
     lat: Float,
     lon: Float,
+    navigateToHome: () -> Unit,
     navigateToDelivery: (Int) -> Unit,
     navigateToBack: () -> Unit,
     viewModel: OrderViewModel = viewModel(
@@ -80,10 +83,13 @@ fun OrderScreen(
     viewModel.lon.floatValue = lon
 
     val locationName = viewModel.locationName.collectAsState().value
+    val ongoingOrder = viewModel.ongoingOrder.collectAsState().value
 
     LaunchedEffect(key1 = viewModel, block = {
         viewModel.getLocationName()
     })
+
+    Log.d("OrderViewModal", "subtotalFee: ${viewModel.subtotalFee}")
 
     OrderContent(
         locationName = locationName,
@@ -108,11 +114,33 @@ fun OrderScreen(
         navigateToBack = navigateToBack
     )
 
-    viewModel.ongoingOrder.collectAsState().value.let { order ->
-        when(order){
+    viewModel.response.collectAsState().value.let { response ->
+        var showDialog by remember {
+            mutableStateOf(true)
+        }
+        when(response){
             is UiState.Success -> {
-               val data = order.data
-               navigateToDelivery(data.orderId ?: -1)
+               ongoingOrder.let {
+                   when(it){
+                       is UiState.Success -> {
+                           val data = it.data
+                           navigateToDelivery(data.orderId ?: -1)
+                       }
+                       else -> {}
+                   }
+               } }
+            is UiState.Error -> {
+                showDialog = true
+                if(showDialog){
+                    RegisterLoginDialog(
+                        title = stringResource(R.string.order_failed),
+                        message = response.errorMsg,
+                        onDismiss = {
+                            navigateToBack()
+                            showDialog = false
+                        }
+                    )
+                }
             }
             else -> {}
         }
@@ -147,6 +175,7 @@ fun OrderContent(
             },
             wasteType = wasteType,
             wasteQty = wasteQty,
+            onDismiss = { showWasteModal = false }
         )
     }
 
@@ -157,7 +186,8 @@ fun OrderContent(
             onCLick = { newValue ->
                 notesOnCLick(newValue)
                 showNotesModal = false
-            }
+            },
+            onDismiss = { showNotesModal = false }
         )
     }
 
@@ -275,6 +305,7 @@ fun WasteDetailsModal(
     onClickButton: (WasteType, String) -> Unit,
     wasteType: WasteType,
     wasteQty: String,
+    onDismiss: () -> Unit,
     modifier: Modifier = Modifier.background(Color.Transparent)
 ) {
     var initWasteType by remember {
@@ -290,7 +321,7 @@ fun WasteDetailsModal(
         if(showModal) modalState.show() else modalState.hide()
     })
     ModalBottomSheet(
-        onDismissRequest ={} ,
+        onDismissRequest = onDismiss ,
         sheetState = modalState,
         content = {
             Column(
@@ -344,6 +375,7 @@ fun WasteDetailsModal(
 fun NotesModal(
     showModal: Boolean,
     notes: String,
+    onDismiss: () -> Unit,
     onCLick: (String) -> Unit
 ) {
     var initNotes by remember {
@@ -388,7 +420,7 @@ fun NotesModal(
             }
         },
         containerColor = Color.White,
-        onDismissRequest = { }
+        onDismissRequest = onDismiss
     )
 }
 
@@ -414,6 +446,7 @@ fun WasteModalPreview() {
                 showModal = true
             },
             showModal = showModal,
+            onDismiss = {}
         )
     }
 }

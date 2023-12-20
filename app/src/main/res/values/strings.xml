@@ -109,4 +109,7 @@
     <string name="not_uploaded_proof">Proof picture is not uploaded yet!</string>
     <string name="update_status">Update Status</string>
     <string name="status_updates">Order status is updated!</string>
+    <string name="order_failed">Order Failed!</string>
+    <string name="title_activity_splash_screen">SplashScreenActivity</string>
+    <string name="failed_to_load_location_data">Failed to load location data</string>
 </resources>

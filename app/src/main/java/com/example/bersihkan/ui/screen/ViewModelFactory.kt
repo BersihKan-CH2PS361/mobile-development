@@ -3,7 +3,7 @@ package com.example.bersihkan.ui.screen
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.bersihkan.data.repository.DataRepository
-import com.example.bersihkan.ui.MainViewModel
+import com.example.bersihkan.ui.BaseViewModel
 import com.example.bersihkan.ui.screen.collector.delivery.DeliveryCollectorViewModel
 import com.example.bersihkan.ui.screen.collector.detailHistory.DetailCollectorViewModel
 import com.example.bersihkan.ui.screen.collector.editProfile.EditProfileCollectorViewModel
@@ -61,8 +61,8 @@ class ViewModelFactory(private val repository: DataRepository) : ViewModelProvid
         if(modelClass.isAssignableFrom(HomeCollectorViewModel::class.java)){
             return HomeCollectorViewModel(repository) as T
         }
-        if(modelClass.isAssignableFrom(MainViewModel::class.java)){
-            return MainViewModel(repository) as T
+        if(modelClass.isAssignableFrom(BaseViewModel::class.java)){
+            return BaseViewModel(repository) as T
         }
         if(modelClass.isAssignableFrom(HistoryCollectorViewModel::class.java)){
             return HistoryCollectorViewModel(repository) as T

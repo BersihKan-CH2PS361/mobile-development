@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -30,7 +32,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -54,6 +60,7 @@ import androidx.core.content.ContextCompat
 import androidx.work.Data
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
+import com.example.bersihkan.BuildConfig
 import com.example.bersihkan.R
 import com.example.bersihkan.data.di.Injection
 import com.example.bersihkan.data.local.DataDummy
@@ -80,16 +87,30 @@ import com.example.bersihkan.helper.calculateStatisticsTotals
 import com.example.bersihkan.helper.convertToDate
 import com.example.bersihkan.notification.NotificationWorker
 import com.example.bersihkan.ui.components.cards.OrderOngoingCard
+import com.example.bersihkan.ui.components.modal.RegisterLoginDialog
+import com.example.bersihkan.ui.theme.Botticelli
+import com.example.bersihkan.ui.theme.Mercury
+import com.example.bersihkan.ui.theme.Shapes
 import com.example.bersihkan.utils.Event
 import com.example.bersihkan.utils.UserRole
 import com.example.kekkomiapp.ui.common.UiState
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.libraries.places.api.Places
+import com.google.android.libraries.places.api.model.AutocompletePrediction
+import com.google.android.libraries.places.api.model.AutocompleteSessionToken
+import com.google.android.libraries.places.api.model.Place
+import com.google.android.libraries.places.api.net.FetchPlaceRequest
+import com.google.android.libraries.places.api.net.FetchPlaceResponse
+import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
+import com.google.android.libraries.places.api.net.FindAutocompletePredictionsResponse
 
 @Composable
 fun HomeScreen(
     navigateToHomeCustomer: () -> Unit,
     navigateToHomeCollector: () -> Unit,
+    navigateToSearch: (String) -> Unit,
     navigateToStatistics: () -> Unit,
     navigateToDetail: (Int) -> Unit,
     navigateToDelivery: (Int) -> Unit,
@@ -111,7 +132,7 @@ fun HomeScreen(
         if (!userModel.isLogin) {
             navigateToWelcomePage1()
         }
-        if(userModel.role == UserRole.COLLECTOR){
+        if (userModel.role == UserRole.COLLECTOR) {
             navigateToHomeCollector()
         }
     }
@@ -130,13 +151,22 @@ fun HomeScreen(
         context, Manifest.permission.POST_NOTIFICATIONS
     ) == PackageManager.PERMISSION_GRANTED
 
-    val requestPermissionLauncher =
+    val requestPermissionLocationLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
             if (isGranted) {
-//                getLocation(fusedLocationClient, context) { lat, lon ->
-//                    viewModel.lat.floatValue = lat.toFloat()
-//                    viewModel.lon.floatValue = lon.toFloat()
-//                }
+                getLocation(fusedLocationClient, context) { lat, lon ->
+                    viewModel.lat.floatValue = lat.toFloat()
+                    viewModel.lon.floatValue = lon.toFloat()
+                }
+            } else {
+                Toast.makeText(context, "Permission denied.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+    val requestPermissionNotificationLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+            if (isGranted) {
+                requestPermissionLocationLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
             } else {
                 Toast.makeText(context, "Permission denied.", Toast.LENGTH_SHORT).show()
             }
@@ -146,24 +176,55 @@ fun HomeScreen(
 
     } else {
         DisposableEffect(Unit) {
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
-                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                requestPermissionNotificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
             onDispose { }
         }
     }
 
     if (isPermissionGranted) {
-//        getLocation(fusedLocationClient, context) { lat, lon ->
-//            viewModel.lat.floatValue = lat.toFloat()
-//            viewModel.lon.floatValue = lon.toFloat()
-//        }
+        getLocation(fusedLocationClient, context) { lat, lon ->
+            viewModel.lat.floatValue = lat.toFloat()
+            viewModel.lon.floatValue = lon.toFloat()
+        }
         viewModel.getLocationName()
     } else {
         DisposableEffect(Unit) {
-            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            requestPermissionLocationLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
             onDispose { }
         }
+    }
+
+    viewModel.isSearching.collectAsState().value.let { isSearching ->
+        if (isSearching) {
+            Log.d("HomeScreen", "isSearching: Search Screen is showed")
+
+//            SearchScreen(
+//                query = viewModel.locationName.value,
+//                onLocationClicked = { latLng ->
+//                    viewModel.lat.floatValue = latLng.latitude.toFloat()
+//                    viewModel.lon.floatValue = latLng.longitude.toFloat()
+//                    viewModel.isNowSearching(false)
+//                },
+//                onErrorFetchData = {
+//                    viewModel.isErrorLocationShowed.value = true
+//                }
+//            )
+        } else {
+            Log.d("HomeScreen", "isSearching: $isSearching")
+        }
+    }
+
+    if (viewModel.isErrorLocationShowed.value) {
+        RegisterLoginDialog(
+            title = stringResource(R.string.error),
+            message = stringResource(R.string.failed_to_load_location_data),
+            onDismiss = {
+                viewModel.isNowSearching(false)
+                viewModel.isErrorLocationShowed.value = false
+            }
+        )
     }
 
     val user = viewModel.userModel.collectAsState().value
@@ -172,10 +233,11 @@ fun HomeScreen(
     val contents = viewModel.contents.collectAsState(initial = UiState.Loading).value
     val ongoingOrder = viewModel.ongoingOrder.collectAsState(initial = UiState.Loading).value
     val locationName = viewModel.locationName.collectAsState().value
+    val isEnable = viewModel.isEnable.collectAsState().value
 
-    viewModel.notification.collectAsState().value.let {  notification ->
+    viewModel.notification.collectAsState().value.let { notification ->
         notification.getContentIfNotHandled().let { isShowed ->
-            if(isShowed == true){
+            if (isShowed == true) {
                 val dataNotif = Data.Builder()
                     .putString(NotificationWorker.EXTRA_USER, UserRole.USER.role)
                     .putString(NotificationWorker.EXTRA_STATUS, viewModel.orderStatus.value.status)
@@ -190,12 +252,13 @@ fun HomeScreen(
 
     HomeContent(
         query = locationName,
-        onQueryChange = {},
         onClickOrderCard = {
-            navigateToOrder(viewModel.lat.value, viewModel.lon.value)
+            navigateToOrder(viewModel.lat.floatValue, viewModel.lon.floatValue)
         },
         histories = histories,
         contents = contents,
+        isEnable = isEnable,
+        navigateToSearch = { navigateToSearch(viewModel.locationName.value) },
         navigateToDetail = navigateToDetail,
         name = user.name,
         profile = if (user.role == UserRole.USER) R.drawable.ic_user_profile_2 else R.drawable.ic_collector_profile,
@@ -203,6 +266,14 @@ fun HomeScreen(
         ongoingOrder = ongoingOrder,
         navigateToDelivery = navigateToDelivery,
         modifier = modifier,
+        onLocationClicked = { latLng ->
+            viewModel.lat.floatValue = latLng.latitude.toFloat()
+            viewModel.lon.floatValue = latLng.longitude.toFloat()
+            viewModel.isNowSearching(false)
+        },
+        onErrorFetchData = {
+            viewModel.isErrorLocationShowed.value = true
+        }
     )
 
 //    Box(
@@ -217,13 +288,16 @@ fun HomeScreen(
 @Composable
 fun HomeContent(
     query: String,
-    onQueryChange: (String) -> Unit,
     onClickOrderCard: () -> Unit,
+    onLocationClicked: (LatLng) -> Unit,
+    onErrorFetchData: (String) -> Unit,
+    navigateToSearch: () -> Unit,
     histories: UiState<List<DetailOrderResponse>>,
     contents: UiState<List<ContentsResponse>>,
     ongoingOrder: UiState<DetailOrderResponse>,
     name: String,
     profile: Int,
+    isEnable: Boolean,
     navigateToStatistics: () -> Unit,
     navigateToDetail: (Int) -> Unit,
     navigateToDelivery: (Int) -> Unit,
@@ -244,8 +318,11 @@ fun HomeContent(
                     )
                     OrderNowCard(
                         query = query,
-                        onQueryChange = onQueryChange,
+                        onLocationClicked = onLocationClicked,
+                        onErrorFetchData = onErrorFetchData,
                         onClick = onClickOrderCard,
+                        isEnable = isEnable,
+                        onSearchBarClick = navigateToSearch,
                         modifier = Modifier
                             .padding(horizontal = 20.dp)
                             .offset(0.dp, 150.dp)
@@ -336,6 +413,7 @@ fun HomeContent(
                                 modifier = Modifier.padding(top = 90.dp, start = 20.dp)
                             )
                         }
+
                         else -> {}
                     }
                 }
@@ -418,6 +496,7 @@ fun HomeContent(
                                     .padding(top = 30.dp, start = 20.dp)
                             )
                         }
+
                         else -> {}
                     }
                 }
@@ -522,6 +601,7 @@ fun HomeContent(
                             }
                         }
                     }
+
                     else -> {}
                 }
             }
@@ -552,6 +632,7 @@ fun HomeContent(
                 is UiState.Error -> {
                     Log.d("HomeScreen", "ongoingOrder: ${data.errorMsg}")
                 }
+
                 else -> {}
             }
         }
@@ -688,9 +769,8 @@ fun HomeContentPreview() {
         val histories = UiState.Success(DataDummy.detailOrderResponse)
         HomeContent(
             query = query,
-            onQueryChange = { newValue ->
-                query = newValue
-            },
+            onLocationClicked = {},
+            onErrorFetchData = {},
             contents = contents,
             histories = histories,
             name = "Elizabeth",
@@ -700,6 +780,8 @@ fun HomeContentPreview() {
             onClickOrderCard = {},
             ongoingOrder = UiState.Success(DataDummy.detailOrderResponse[1]),
             navigateToDelivery = {},
+            isEnable = true,
+            navigateToSearch = {}
         )
     }
 }
