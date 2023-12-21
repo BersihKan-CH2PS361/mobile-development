@@ -806,11 +806,11 @@ fun getLocation(
                     Log.d("HomeScreen", "getLocation: lat=$latitude, lon=$longitude")
                     onLocationResult(latitude, longitude)
                 } else {
-                    Toast.makeText(
-                        context,
-                        "Location is not found. Try again",
-                        Toast.LENGTH_SHORT
-                    ).show()
+//                    Toast.makeText(
+//                        context,
+//                        "Location is not found. Try again",
+//                        Toast.LENGTH_SHORT
+//                    ).show()
                 }
 
             }

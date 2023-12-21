@@ -12,7 +12,6 @@ class MapsApiConfig() {
 
     companion object {
         private const val MAPS_URL = BuildConfig.MAPS_URL
-        private const val MAPS_TOKEN = BuildConfig.MAPS_TOKEN
         fun getApiService(): MapsApiService {
             val loggingInterceptor =
                 if (BuildConfig.DEBUG) {

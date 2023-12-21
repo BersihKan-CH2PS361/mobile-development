@@ -579,37 +579,6 @@ class DataRepository private constructor(
 
         }
 
-//    suspend fun getFacilityIdFromPostalCode(postalCode: Int): Int {
-//        return withContext(Dispatchers.IO) {
-//            try {
-//                val recommendation = recommendationDao.getFacilityByPostalCode(postalCode)
-//                if (recommendation != null) {
-//                    val listFacility = listOf(
-//                        recommendation.r1,
-//                        recommendation.r2,
-//                        recommendation.r3,
-//                        recommendation.r4,
-//                        recommendation.r5,
-//                        recommendation.r6,
-//                        recommendation.r7,
-//                        recommendation.r8,
-//                        recommendation.r9,
-//                        recommendation.r10
-//                    )
-//                    val randomElement = listFacility.randomOrNull() ?: -1
-//                    Log.d(TAG, "Random facility ID: $randomElement")
-//                    return@withContext randomElement
-//                } else {
-//                    Log.d(TAG, "No recommendation found for postal code: $postalCode")
-//                    return@withContext -1
-//                }
-//            } catch (e: Exception) {
-//                Log.d(TAG, "getFacilityIdFromPostalCode: ${e.message}")
-//                return@withContext -1
-//            }
-//        }
-//    }
-
     private suspend fun getFacilityIdFromPostalCode(postalCode: Int): Int {
         val idx = getPostalCodeIdx(postalCode = postalCode)
         if(idx != -1){
@@ -708,7 +677,7 @@ class DataRepository private constructor(
 
         Log.d(TAG, "runMLModel: ${outputFeature0.floatArray[0]}")
 
-        val topK = 5 // Number of top recommendations
+        val topK = 10 // Number of top recommendations
 
         val indicesWithValues = outputFeature0.floatArray.withIndex().toList()
 
