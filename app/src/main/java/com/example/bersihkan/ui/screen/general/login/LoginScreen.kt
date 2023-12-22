@@ -86,7 +86,7 @@ fun LoginScreen(
         isEnable = isEnabled
     )
 
-    val response by viewModel.response.collectAsState()
+    val response = viewModel.response.collectAsState().value
 
     LaunchedEffect(response) {
         when (response) {

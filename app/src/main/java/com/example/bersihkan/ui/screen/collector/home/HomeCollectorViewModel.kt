@@ -119,6 +119,8 @@ class HomeCollectorViewModel(private val repository: DataRepository) : ViewModel
                             }
                         }
                     }
+
+                    else -> {}
                 }
             }
         }
@@ -126,7 +128,7 @@ class HomeCollectorViewModel(private val repository: DataRepository) : ViewModel
 
     private fun checkOrderStatusChange(newStatus: OrderStatus) {
         _notification.value = Event(false)
-        if (newStatus != _orderStatus.value) {
+        if (newStatus != _orderStatus.value && newStatus != OrderStatus.DELIVERED) {
             _orderStatus.value = newStatus
             _notification.value = Event(true)
         }

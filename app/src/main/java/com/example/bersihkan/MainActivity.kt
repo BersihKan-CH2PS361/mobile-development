@@ -29,29 +29,6 @@ class MainActivity : ComponentActivity() {
             setKeepOnScreenCondition {
                 viewModel.isLoading.value
             }
-            setOnExitAnimationListener { splash ->
-                val zoomX = ObjectAnimator.ofFloat(
-                    splash.iconView,
-                    View.SCALE_X,
-                    0.4f,
-                    0.0f
-                )
-                zoomX.interpolator = OvershootInterpolator()
-                zoomX.duration = 500L
-                zoomX.doOnEnd { splash.remove() }
-                val zoomY = ObjectAnimator.ofFloat(
-                    splash.iconView,
-                    View.SCALE_Y,
-                    0.4f,
-                    0.0f
-                )
-                zoomY.interpolator = OvershootInterpolator()
-                zoomY.duration = 1000
-                zoomY.doOnEnd { splash.remove() }
-
-                zoomX.start()
-                zoomY.start()
-            }
         }
 
         val apiKey = BuildConfig.MAPS_TOKEN
