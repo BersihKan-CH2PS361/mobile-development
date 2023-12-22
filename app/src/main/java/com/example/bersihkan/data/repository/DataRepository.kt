@@ -401,6 +401,7 @@ class DataRepository private constructor(
         subtotalFee: Int,
     ): Flow<ResultState<GeneralResponse>> = flow {
         try {
+            Log.d(TAG, "createOrder: lat = $pickupLat, lon = $pickupLon")
             val postalCode = getPostalCodeFromLocation(pickupLat.toDouble(), pickupLon.toDouble())
             Log.d(TAG, "createOrder: postalCode = $postalCode")
             if(postalCode == 0) {
