@@ -20,9 +20,12 @@ Run the project on an emulator or physical device of your choice.
 
 ## Library & Tools
 
+- Android Studio
 - Kotlin
 - Retrofit
-- Android Studio
+- GMaps API
+- Places API
+- Geocoder
 - SQLite Database
 
 ## Application Features ##
